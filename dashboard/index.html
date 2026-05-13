@@ -45,8 +45,38 @@
           </div>
         </div>
       </div>
-      <div class="hero-chart">
-        <canvas id="severity-doughnut"></canvas>
+    </section>
+
+    <section class="trends">
+      <h2>Trends — previous vs current run</h2>
+      <p class="muted" id="trends-meta">Comparing this run against the previous archived snapshot.</p>
+
+      <div class="chart-group">
+        <h3>Group A — Test outcome</h3>
+        <div class="chart-pair">
+          <div class="chart-card">
+            <h4>Previous run</h4>
+            <div class="chart-wrap"><canvas id="chart-prev-tests"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <h4>Current run</h4>
+            <div class="chart-wrap"><canvas id="chart-curr-tests"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-group">
+        <h3>Group B — Bug severity</h3>
+        <div class="chart-pair">
+          <div class="chart-card">
+            <h4>Previous run</h4>
+            <div class="chart-wrap"><canvas id="chart-prev-bugs"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <h4>Current run</h4>
+            <div class="chart-wrap"><canvas id="chart-curr-bugs"></canvas></div>
+          </div>
+        </div>
       </div>
     </section>
 

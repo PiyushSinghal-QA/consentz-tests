@@ -5,16 +5,16 @@
  * Reads:
  *   - Automation/test-results/results.json   (Playwright JSON reporter output)
  *   - bug-severity.json                       (severity assignments + weights)
+ *   - dashboard/data/results.json             (PREVIOUS run, for trend deltas)
  *
  * Writes:
  *   - dashboard/data/results.json             (consumed by dashboard/app.js)
+ *   - dashboard/data/previous.json            (snapshot of the prior run)
+ *   - dashboard/data/screenshots/<id>.png     (copied failure screenshots)
+ *   - dashboard/data/history/<stamp>.json     (archived for trend tracking)
  *
  * Run after every test run:
  *   node tools/build-dashboard-data.js
- *
- * The dashboard frontend (dashboard/index.html) fetches the output JSON and
- * renders everything client-side, so the script is the only piece of
- * pipeline. No backend, no database.
  */
 
 const fs = require('fs');
@@ -22,23 +22,22 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const PW_RESULTS = path.join(ROOT, 'Automation/test-results/results.json');
+const PW_TEST_RESULTS_DIR = path.join(ROOT, 'Automation/test-results');
 const BUG_SEVERITY = path.join(ROOT, 'bug-severity.json');
 const OUT = path.join(ROOT, 'dashboard/data/results.json');
+const PREV_OUT = path.join(ROOT, 'dashboard/data/previous.json');
 const ARCHIVE_DIR = path.join(ROOT, 'dashboard/data/history');
+const SCREENSHOTS_DIR = path.join(ROOT, 'dashboard/data/screenshots');
+// In CI, the previous run is downloaded from GH Pages into this file before
+// the build script runs (see .github/workflows/dashboard.yml). When present,
+// it's the cross-run "previous"; otherwise we fall back to whatever is in
+// dashboard/data/results.json (works locally where the file persists).
+const PREV_FROM_CI = path.join(ROOT, 'Automation/.previous-results.json');
 
 // ---- Helpers -----------------------------------------------------------
 
-/** Map a spec file path to a module name.
- *  e.g. "tests/patients/patients-search.spec.ts" → "Patients"
- *       "tests/calendar/calendar-booking.spec.ts" → "Calendar"
- *       "tests/auth/login.spec.ts"                → "Login"
- *       "tests/dashboard/dashboard.spec.ts"       → "Dashboard"
- */
 function moduleFromPath(specPath) {
   const norm = specPath.replace(/\\/g, '/');
-  // Playwright JSON paths can be either "tests/<folder>/foo.spec.ts" OR
-  // "<folder>/foo.spec.ts" (the `tests/` prefix is stripped by the JSON
-  // reporter on some runs). Match both shapes.
   const m = norm.match(/(?:^|tests\/)([^\/]+)\/[^\/]+\.spec\.ts$/);
   if (!m) return 'Other';
   const folder = m[1].toLowerCase();
@@ -54,15 +53,63 @@ function cap(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/** Walk the Playwright JSON tree (suites contain suites contain specs contain tests). */
+function stripAnsi(s) {
+  return s.replace(/\[[0-9;]*[a-zA-Z]/g, '');
+}
+
+function safeFilename(s) {
+  return s.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120);
+}
+
+/** Copy a Playwright attachment into dashboard/data/screenshots/ and return
+ *  the dashboard-relative path. Returns null if the source is missing. */
+function copyScreenshot(srcAbsPath, testTitle, attachmentName, index) {
+  if (!srcAbsPath || !fs.existsSync(srcAbsPath)) return null;
+  fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
+  const ext = path.extname(srcAbsPath) || '.png';
+  const stem = safeFilename(`${testTitle}__${attachmentName || 'shot'}__${index}`);
+  const destName = `${stem}${ext}`;
+  const destAbs = path.join(SCREENSHOTS_DIR, destName);
+  try {
+    fs.copyFileSync(srcAbsPath, destAbs);
+    return `data/screenshots/${destName}`; // relative to dashboard/ root
+  } catch (e) {
+    console.warn(`[dashboard] Could not copy screenshot ${srcAbsPath}: ${e.message}`);
+    return null;
+  }
+}
+
+/** Resolve a Playwright attachment path to absolute. Playwright writes them
+ *  relative to its outputDir (Automation/test-results/) by default. */
+function resolveAttachmentPath(rawPath) {
+  if (!rawPath) return null;
+  const norm = rawPath.replace(/\\/g, '/');
+  if (path.isAbsolute(norm)) return norm;
+  // Try relative to repo root first, then relative to test-results/.
+  const candidates = [
+    path.join(ROOT, norm),
+    path.join(PW_TEST_RESULTS_DIR, norm),
+  ];
+  for (const c of candidates) if (fs.existsSync(c)) return c;
+  return candidates[0];
+}
+
 function flattenTests(suite, accum = [], specPath = null) {
   const currentPath = suite.file || suite.title || specPath;
   for (const sub of suite.suites || []) flattenTests(sub, accum, currentPath);
   for (const spec of suite.specs || []) {
-    // Skip Playwright `*.setup.ts` projects — they're auth bootstrap, not tests
     if (/\.setup\.ts$/.test(spec.file || currentPath || '')) continue;
     for (const t of spec.tests || []) {
       const lastResult = (t.results || [])[t.results.length - 1] || {};
+      const imageAttachments = (lastResult.attachments || [])
+        .filter((a) => /^image\//.test(a.contentType || ''));
+      const copiedAttachments = imageAttachments
+        .map((a, i) => {
+          const abs = resolveAttachmentPath(a.path);
+          const dashPath = copyScreenshot(abs, spec.title, a.name, i);
+          return dashPath ? { name: a.name, path: dashPath } : null;
+        })
+        .filter(Boolean);
       accum.push({
         title: spec.title,
         file: spec.file || currentPath,
@@ -71,28 +118,54 @@ function flattenTests(suite, accum = [], specPath = null) {
         durationMs: lastResult.duration || 0,
         retries: (t.results || []).length - 1,
         errors: (lastResult.errors || []).map((e) => stripAnsi(e.message || '').slice(0, 600)),
-        attachments: (lastResult.attachments || [])
-          .filter((a) => /^image\//.test(a.contentType || ''))
-          .map((a) => ({
-            name: a.name,
-            // Relative path from project root if Playwright wrote it that way;
-            // else keep the absolute one and let the dashboard decide.
-            path: (a.path || '').replace(/\\/g, '/'),
-          })),
+        attachments: copiedAttachments,
       });
     }
   }
   return accum;
 }
 
-function stripAnsi(s) {
-  return s.replace(/\[[0-9;]*[a-zA-Z]/g, '');
+/** Read the prior run's summary (overall + per-module pass/fail + bug counts)
+ *  for trend comparison. Returns null if no prior data is available. */
+function loadPreviousSnapshot() {
+  // Prefer CI-fetched snapshot (cross-run via GH Pages), then local
+  // dashboard/data/results.json from a prior invocation on this machine.
+  for (const src of [PREV_FROM_CI, OUT]) {
+    if (fs.existsSync(src)) {
+      try {
+        const prior = JSON.parse(fs.readFileSync(src, 'utf8'));
+        return {
+          generatedAt: prior.generatedAt || null,
+          overall: prior.overall || null,
+          modules: (prior.modules || []).map((m) => ({
+            name: m.name,
+            pass: m.pass,
+            fail: m.fail,
+            skipped: m.skipped,
+            total: m.total,
+          })),
+          bugs: (prior.bugs || []).map((b) => ({
+            id: b.id,
+            severity: b.severity,
+            module: b.module,
+          })),
+        };
+      } catch (e) {
+        console.warn(`[dashboard] Could not parse previous snapshot at ${src}: ${e.message}`);
+      }
+    }
+  }
+  return null;
 }
 
 // ---- Main --------------------------------------------------------------
 
 function main() {
-  // 1. Load Playwright results — tolerate missing/empty
+  // 1. Snapshot the PREVIOUS run BEFORE we overwrite results.json
+  const previous = loadPreviousSnapshot();
+  if (previous) fs.writeFileSync(PREV_OUT, JSON.stringify(previous, null, 2));
+
+  // 2. Load Playwright results — tolerate missing/empty
   let pwRaw = null;
   try {
     pwRaw = JSON.parse(fs.readFileSync(PW_RESULTS, 'utf8'));
@@ -101,14 +174,21 @@ function main() {
     pwRaw = { stats: {}, suites: [] };
   }
 
-  // 2. Load bug-severity
+  // 3. Load bug-severity
   const severity = JSON.parse(fs.readFileSync(BUG_SEVERITY, 'utf8'));
 
-  // 3. Flatten tests
+  // 4. Reset screenshots dir for a clean run
+  if (fs.existsSync(SCREENSHOTS_DIR)) {
+    for (const f of fs.readdirSync(SCREENSHOTS_DIR)) {
+      try { fs.unlinkSync(path.join(SCREENSHOTS_DIR, f)); } catch {}
+    }
+  }
+
+  // 5. Flatten tests (this is also where screenshots get copied)
   const tests = [];
   for (const s of pwRaw.suites || []) flattenTests(s, tests);
 
-  // 4. Group by module
+  // 6. Group by module
   const byModule = {};
   for (const t of tests) {
     const mod = moduleFromPath(t.file || '');
@@ -116,18 +196,14 @@ function main() {
     byModule[mod].tests.push(t);
   }
 
-  // 5. Pinned modules from bug-severity.modules always appear, even with
-  //    0 tests / 0 bugs. Also create modules from any bug's `module` field.
   for (const m of severity.modules || []) {
     if (!byModule[m]) byModule[m] = { name: m, tests: [] };
   }
-  for (const [bugId, bug] of Object.entries(severity.bugs)) {
+  for (const [, bug] of Object.entries(severity.bugs)) {
     if (!byModule[bug.module]) byModule[bug.module] = { name: bug.module, tests: [] };
   }
 
-  // 6. Compute module-level stats. Preserve pinned-list order so the dashboard
-  //    grid matches the user's mental nav order (Login, Dashboard, Calendar, …)
-  //    instead of alphabetising it.
+  // 7. Compute module-level stats in pinned-nav order
   const pinnedOrder = severity.modules || [];
   const modules = Object.values(byModule).map((m) => {
     const pass = m.tests.filter((t) => t.status === 'passed').length;
@@ -155,7 +231,7 @@ function main() {
     return ai - bi;
   });
 
-  // 7. Overall stats
+  // 8. Overall stats
   const overall = {
     pass: tests.filter((t) => t.status === 'passed').length,
     fail: tests.filter((t) => t.status === 'failed').length,
@@ -166,7 +242,7 @@ function main() {
     runDuration: pwRaw.stats?.duration || null,
   };
 
-  // 8. Emit
+  // 9. Emit
   const payload = {
     generatedAt: new Date().toISOString(),
     severityConfig: {
@@ -176,20 +252,24 @@ function main() {
     overall,
     modules,
     bugs: Object.entries(severity.bugs).map(([id, b]) => ({ id, ...b })),
+    previous: previous ? { generatedAt: previous.generatedAt, overall: previous.overall, bugs: previous.bugs } : null,
   };
 
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(payload, null, 2));
 
-  // 9. Archive a copy for trend tracking
+  // 10. Archive a copy for trend tracking
   fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   fs.writeFileSync(path.join(ARCHIVE_DIR, `${stamp}.json`), JSON.stringify(payload, null, 2));
 
+  const screenshotCount = fs.existsSync(SCREENSHOTS_DIR) ? fs.readdirSync(SCREENSHOTS_DIR).length : 0;
   console.log(`[dashboard] Wrote ${OUT}`);
   console.log(`[dashboard] Tests: ${overall.pass}/${overall.total} passed, ${overall.fail} failed, ${overall.skipped} skipped`);
   console.log(`[dashboard] Modules: ${modules.map((m) => `${m.name}(${m.pass}/${m.total})`).join(', ')}`);
   console.log(`[dashboard] Bugs: ${payload.bugs.length} across ${new Set(payload.bugs.map((b) => b.module)).size} modules`);
+  console.log(`[dashboard] Screenshots copied: ${screenshotCount}`);
+  console.log(`[dashboard] Previous-run snapshot: ${previous ? `present (from ${previous.generatedAt})` : 'none'}`);
 }
 
 main();

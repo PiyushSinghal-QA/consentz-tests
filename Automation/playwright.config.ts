@@ -16,7 +16,7 @@ export default defineConfig({
     ['json', { outputFile: 'test-results/results.json' }],
   ],
   use: {
-    baseURL: process.env.BASE_URL || 'https://v3.consentz.com',
+    baseURL: process.env.BASE_URL || 'https://v4.consentz.com',
     headless: process.env.HEADLESS === '1',
     ignoreHTTPSErrors: true,
     actionTimeout: 30_000,

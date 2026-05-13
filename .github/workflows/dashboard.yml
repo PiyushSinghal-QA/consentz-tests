@@ -38,9 +38,25 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      - name: Fetch previous dashboard run (for trend deltas)
+        # GitHub Pages serves dashboard/data/results.json from the prior
+        # deployment. Save it locally so build-dashboard-data.js can include
+        # last run's pass/fail + bug counts in the new payload. First-ever
+        # run on a fresh Pages site will 404 — that's fine, the build script
+        # tolerates a missing snapshot.
+        continue-on-error: true
+        run: |
+          REPO_OWNER="${GITHUB_REPOSITORY%%/*}"
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          PREV_URL="https://${REPO_OWNER}.github.io/${REPO_NAME}/data/results.json"
+          echo "Fetching ${PREV_URL}"
+          curl -fsSL "${PREV_URL}" -o .previous-results.json && \
+            echo "Got previous snapshot ($(wc -c < .previous-results.json) bytes)" || \
+            echo "No previous snapshot — first run or 404"
+
       - name: Run test suite
         env:
-          BASE_URL: ${{ secrets.CONSENTZ_BASE_URL || 'https://v3.consentz.com' }}
+          BASE_URL: ${{ secrets.CONSENTZ_BASE_URL || 'https://v4.consentz.com' }}
           CONSENTZ_USERNAME: ${{ secrets.CONSENTZ_USERNAME }}
           CONSENTZ_PASSWORD: ${{ secrets.CONSENTZ_PASSWORD }}
           HEADLESS: "1"

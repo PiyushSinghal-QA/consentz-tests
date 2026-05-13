@@ -8,7 +8,7 @@ const SEVERITY_VALUES = ['critical', 'major', 'minor'];
 let state = {
   data: null,
   overrides: {},   // bugId -> severity (string)
-  doughnut: null,
+  charts: {},      // canvasId -> Chart instance
 };
 
 // ---- Boot --------------------------------------------------------------
@@ -104,8 +104,8 @@ function render() {
   const pct = overallScore;
   ring.style.background = `conic-gradient(${color} ${pct * 3.6}deg, var(--border) ${pct * 3.6}deg)`;
 
-  // Doughnut: severity distribution across all bugs
-  renderDoughnut(d.bugs);
+  // Trend section: 4 pies (prev vs current × tests + bugs)
+  renderTrendCharts(d);
 
   // Module grid
   renderModules(d.modules, weights, thresholds);
@@ -118,19 +118,68 @@ function render() {
   renderFailures(d.modules);
 }
 
-function renderDoughnut(bugs) {
-  const counts = { critical: 0, major: 0, minor: 0 };
-  for (const b of bugs) counts[severityFor(b)] = (counts[severityFor(b)] || 0) + 1;
+// ---- Trend section: 4 pies ---------------------------------------------
 
-  const ctx = document.getElementById('severity-doughnut');
-  if (state.doughnut) state.doughnut.destroy();
-  state.doughnut = new Chart(ctx, {
+function renderTrendCharts(d) {
+  const meta = document.getElementById('trends-meta');
+  if (d.previous && d.previous.generatedAt) {
+    meta.textContent = `Previous run: ${new Date(d.previous.generatedAt).toLocaleString()}. Current run: ${new Date(d.generatedAt).toLocaleString()}.`;
+  } else {
+    meta.textContent = 'No previous run snapshot yet — the previous-run charts will populate on the next CI run.';
+  }
+
+  // Group A: Test outcome (pass / fail / skipped)
+  const currTestCounts = pickTests(d.overall);
+  const prevTestCounts = pickTests(d.previous && d.previous.overall);
+  drawPie('chart-prev-tests', testLabels, prevTestCounts, testColors, prevTestCounts ? 'Pass / Fail / Skip' : 'No data');
+  drawPie('chart-curr-tests', testLabels, currTestCounts, testColors, 'Pass / Fail / Skip');
+
+  // Group B: Bug severity (critical / major / minor)
+  const currBugCounts = bugSeverityCounts(d.bugs);
+  const prevBugCounts = bugSeverityCounts(d.previous && d.previous.bugs);
+  drawPie('chart-prev-bugs', bugLabels, prevBugCounts, bugColors, prevBugCounts ? 'Severity' : 'No data');
+  drawPie('chart-curr-bugs', bugLabels, currBugCounts, bugColors, 'Severity');
+}
+
+const testLabels = ['Passed', 'Failed', 'Skipped'];
+const testColors = ['#10b981', '#ef4444', '#9ca3af'];
+const bugLabels  = ['Critical', 'Major', 'Minor'];
+const bugColors  = ['#ef4444', '#f59e0b', '#6366f1'];
+
+function pickTests(overall) {
+  if (!overall) return null;
+  return [overall.pass || 0, overall.fail || 0, overall.skipped || 0];
+}
+
+function bugSeverityCounts(bugs) {
+  if (!bugs) return null;
+  const counts = { critical: 0, major: 0, minor: 0 };
+  for (const b of bugs) {
+    // Previous-snapshot bugs don't have user overrides applied — they're
+    // canonical at that snapshot time. Current bugs respect overrides.
+    const sev = b.id && state.overrides[b.id] ? state.overrides[b.id] : (b.severity || 'minor');
+    counts[sev] = (counts[sev] || 0) + 1;
+  }
+  return [counts.critical, counts.major, counts.minor];
+}
+
+function drawPie(canvasId, labels, data, colors, subtitle) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+  if (state.charts[canvasId]) state.charts[canvasId].destroy();
+  // No data — render an empty grey pie with explanatory subtitle.
+  const display = data && data.some((n) => n > 0) ? data : [1];
+  const labelsToUse = data && data.some((n) => n > 0) ? labels : ['No data'];
+  const colorsToUse = data && data.some((n) => n > 0) ? colors : ['#e5e7eb'];
+
+  const total = (data || []).reduce((s, n) => s + n, 0);
+  state.charts[canvasId] = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: ['Critical', 'Major', 'Minor'],
+      labels: labelsToUse,
       datasets: [{
-        data: [counts.critical, counts.major, counts.minor],
-        backgroundColor: ['#ef4444', '#f59e0b', '#6366f1'],
+        data: display,
+        backgroundColor: colorsToUse,
         borderWidth: 0,
       }],
     },
@@ -138,8 +187,17 @@ function renderDoughnut(bugs) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'right' },
-        title: { display: true, text: `Bug severity (${bugs.length} total)`, padding: 8 },
+        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+        title: { display: true, text: total ? `${subtitle} (${total})` : subtitle, padding: 4, font: { size: 12 } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const n = data ? data[ctx.dataIndex] : 0;
+              const pct = total ? Math.round((n / total) * 100) : 0;
+              return `${ctx.label}: ${n} (${pct}%)`;
+            },
+          },
+        },
       },
     },
   });
