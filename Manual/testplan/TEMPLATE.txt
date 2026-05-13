@@ -1,0 +1,144 @@
+# =============================================================================
+# Consentz Web App — Page Test Plan Template
+# =============================================================================
+# Convention: ONE test plan file per page/module, holding all one-liner
+# scenarios for that page across every section type. The hierarchical
+# TC ID encodes a sub-feature dimension within the module.
+#
+# File naming:
+#   testplan/<module>/<MODULE>.txt
+#   e.g. testplan/dashboard/DASH.txt   (entire Dashboard page)
+#
+# Test case ID convention:
+#   TC.<MODULE>.<NNN>.<NNN>
+#   The middle NNN groups cases by sub-feature (e.g. .001 = Time Period
+#   Filter, .005 = Widget Library); the trailing NNN is the case index
+#   within that sub-feature. Sub-feature numbering is documented in a
+#   comment block at the top of each <MODULE>.txt.
+#
+# Manual reproduction files (one per TC):
+#   testplan/<module>/manual/TC.<MODULE>.<NNN>.<NNN>.txt
+#   e.g. testplan/dashboard/manual/TC.DASH.001.036.txt
+#
+# Module codes:
+#   DASH   Dashboard
+#   CAL    Calendar
+#   PAT    Patients
+#   WEB    Website
+#   MKT    Marketing
+#   STK    Stock Control
+#   BUS    Business
+#   RPT    Report
+#   SET    Set Up
+#   STG    Settings
+#   LOG    Logs / Archives
+#   HLP    Help
+#   TOP    Top bar (cross-page chrome — Refer a Clinic, icon row, etc.)
+#   AUTH   Login / Logout / Auth
+#   FLOW   Cross-module user journeys
+#
+# Tags (after each test case line, in angle brackets):
+#   <AUTOMATION>   Test case is automated in the Playwright suite.
+#   <MANUAL>       Test case must be executed manually (no automation).
+#   <TBD>          Prefix on the line — case is planned but not yet implemented
+#                  (manual or automated). Drop the prefix once executed once.
+#
+# Sections marked NA can be left as `NA` (single line) — same as the source
+# template. Don't delete the section heading; that way the doc stays a
+# uniform shape and a missing line stands out as "did we think about this?".
+# =============================================================================
+
+[META]
+    Testname     = <MODULE>.<NNN>          # e.g. DASH.001
+    Longname     = <MODULE>.<NNN> (Feature Name)
+    Module       = <Module>                # e.g. Dashboard
+    Flags        = <module-code>, <priority P0|P1|P2>, <area-tags>
+                   # e.g. DASH, P0, FILTER, DATE-RANGE
+
+[Default settings]
+    # Verification of the page / feature in its OUT-OF-THE-BOX state — what
+    # the user sees on first load before any interaction. Replaces the
+    # network-template's "default config via SNMP/CLI/WEB" idea.
+    a. UI         — default visible state on page load
+    b. URL        — page reachable via direct URL navigation (no state needed)
+    c. Help       — tooltip / inline help / docs link verification
+
+[Feature configuration]
+    # User-driven configuration of the feature. Web equivalent of the
+    # network template's UI / SNMP / CLI matrix.
+    a. UI          — feature operated via the web interface
+    b. API         — feature state verifiable via underlying REST/AJAX (where
+                     the test layer can intercept network calls)
+    c. URL params  — feature reachable / configurable via URL query string
+                     where applicable (e.g. ?date_from=...&date_to=...)
+    d. Consistency — UI state, API state, and URL state agree
+
+[State persistence / changes handling]
+    # Replaces the network template's reboot / save / clear-config / ENVM
+    # section. Web app analogue is the page reload, login session,
+    # clinic switch, multi-tab consistency.
+    a. State persists across page reload
+    b. State persists across logout / login (where intentional)
+    c. State persists across clinic switch and switch-back
+    d. State syncs across browser tabs (where intentional)
+    e. Browser back / forward preserves state correctly
+
+[Logs / Notifications / Audit]
+    # Replaces "eventlog / SNMP traps". Web equivalents:
+    a. User actions reflected in the audit log (where the app records them)
+    b. Toast / inline / modal notifications appear with the correct copy
+    c. No console errors / warnings during normal use
+    d. No 4xx / 5xx XHR responses during normal use
+
+[Boundary conditions / Limitations]
+    a. Min / max input length on form fields
+    b. Maximum number of entities (e.g. 6-widget cap on dashboard)
+    c. Date / numeric range boundaries (extreme past, extreme future, zero,
+       negatives, max int)
+    d. Pagination edges (first page, last page, single-item page, empty)
+
+[Functionality]
+    a. Basic     — element presence, labels, copy correctness, click handlers
+        i.   presence verification
+        ii.  label / copy verification
+        iii. click / hover / focus handlers fire
+    b. Main      — core feature behaviour
+        i.   happy-path operation
+        ii.  state transitions
+        iii. ordering / sequencing
+    c. Advanced  — corner cases, multiple entities, edge inputs
+    d. Extreme   — long sessions, repeated rapid clicks, refresh during op,
+                   browser quirks
+
+[Load / Performance]
+    # Replaces "Wire speed / Broadcast storms / High CPU".
+    a. Page load time within target (TBD per page)
+    b. Performance acceptable with large datasets (e.g. 10k patients)
+    c. Multiple simultaneous user actions remain responsive
+    d. Slow / throttled network simulation behaves gracefully
+
+[Interoperability / Cross-cutting]
+    a. Functionality across supported browsers (Chrome, Firefox, Edge, Safari)
+    b. Functionality across screen sizes (desktop / tablet / mobile)
+    c. Interoperability with other modules (cross-module flows)
+    d. Mutually exclusive feature verification
+
+[Accessibility]
+    # New section — not in the source template, but mandatory for web apps.
+    a. Keyboard navigation (Tab order, ESC, Enter, Arrow keys)
+    b. ARIA labels / roles correctly applied
+    c. Colour contrast meets WCAG AA
+    d. Screen-reader compatibility (NVDA / VoiceOver)
+
+[Negative tests]
+    # Replaces "packet malforming". Web equivalents:
+    a. Invalid input handling (empty, out-of-range, malformed dates, special chars)
+    b. Bad-flow scenarios (wrong order of operations, premature actions)
+    c. Network failure handling (offline, timeout, 4xx / 5xx server response)
+    d. Unauthorised / role-gated access attempts
+
+[Security / Vulnerability]
+    a. Known-CVE check on dependencies (npm audit / Snyk)
+    b. Fuzz testing on form fields
+    c. Penetration testing — XSS, CSRF, session hijacking, IDOR
+    d. Authentication / authorisation enforcement (RBAC verification)

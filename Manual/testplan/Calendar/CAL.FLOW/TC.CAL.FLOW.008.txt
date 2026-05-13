@@ -1,0 +1,25 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.CAL.FLOW.008 — Duplicate-appointment behaviour — same patient AT THE SAME TIME: attempt to book the same patient into a slot already occupied by an existing appointment for that patient. Capture the actual app behaviour: silent success (creates a duplicate row), silent failure (no event added, no error), explicit error (toast / inline message), or block (Save disabled). Document the observed behaviour as the assertion target so a regression flips the test red.
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Calendar lifecycle — cross-feature integration (CAL.FLOW)
+Section     : [Functionality]
+Tags        : <TBD> <AUTOMATION>
+Status      : STUB — see [Steps] block below for status of detailed reproduction
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  STUB — to be expanded on first manual execution.
+  Intent: Duplicate-appointment behaviour — same patient AT THE SAME TIME: attempt to book the same patient into a slot already occupied by an existing appointment for that patient. Capture the actual app behaviour: silent success (creates a duplicate row), silent failure (no event added, no error), explicit error (toast / inline message), or block (Save disabled). Document the observed behaviour as the assertion target so a regression flips the test red.
+
+[Expected]
+  STUB — to be filled in alongside the [Steps] block above.
+
+[Postconfiguration]
+  NA — case does not modify persistent state.

@@ -1,0 +1,55 @@
+[META]
+    Testname     = CAL.002
+    Longname     = CAL.002 (Calendar Grid & Navigation)
+    Module       = Calendar
+    Flags        = CAL, P1, GRID, VIEW-MODES, NAVIGATION, CAL.002
+
+# Sister sub-feature to CAL.001 (Book Appointment). Covers the calendar
+# itself — view modes, navigation, filtering by practitioner / room.
+# Lower priority than .001 because the booking flow is what the CTO
+# called out; this plan exists so future tests have a place to live.
+
+[Default settings]
+    TC.CAL.002.001 Verify Calendar page lands on the current week / day in the user's local timezone <AUTOMATION>
+    <TBD>TC.CAL.002.002 Verify a default view mode (day / week / month) is selected on first load <AUTOMATION>
+    <TBD>TC.CAL.002.003 Verify the practitioner / room filter row is visible <AUTOMATION>
+    <TBD>TC.CAL.002.004 Verify "today" button is visible in the toolbar <AUTOMATION>
+
+[Feature configuration]
+    TC.CAL.002.005 Verify view mode toggles (Day / Week / Month) exist, each renders without console errors AND clicking marks the corresponding toggle active <AUTOMATION>
+    <TBD>TC.CAL.002.006 Verify Prev / Next navigation moves the visible window by one view-mode unit <AUTOMATION>
+    <TBD>TC.CAL.002.007 Verify "Today" button snaps the view back to the current period <AUTOMATION>
+    <TBD>TC.CAL.002.008 Verify practitioner filter narrows the visible appointments to that practitioner only <AUTOMATION>
+    <TBD>TC.CAL.002.009 Verify room filter narrows the visible appointments to that room only <AUTOMATION>
+
+[State persistence / changes handling]
+    <TBD>TC.CAL.002.010 Verify selected view mode persists across page reload <MANUAL>
+    <TBD>TC.CAL.002.011 Verify practitioner filter selection persists across clinic switch + return <MANUAL>
+
+[Logs / Notifications / Audit]
+    TC.CAL.002.012 Verify no console errors / 4xx / 5xx during view-mode switching <AUTOMATION>
+    TC.CAL.002.013 Verify no UI-error flashes captured by MutationObserver on initial calendar load + view-mode round-trip <AUTOMATION>
+
+[Boundary conditions / Limitations]
+    <TBD>TC.CAL.002.014 Verify navigation to a week containing 0 appointments renders cleanly (empty state) <AUTOMATION>
+    <TBD>TC.CAL.002.015 Verify navigation to a week containing N appointments at the same slot renders all of them <MANUAL>
+
+[Functionality]
+    <TBD>TC.CAL.002.016 Verify clicking on an existing appointment block opens its detail panel <AUTOMATION>
+    <TBD>TC.CAL.002.017 Verify hover on an appointment block surfaces a tooltip with the patient + treatment <MANUAL>
+    <TBD>TC.CAL.002.018 Verify drag-and-drop of an appointment moves it to the dropped slot AND persists <AUTOMATION>
+
+[Load / Performance]
+    <TBD>TC.CAL.002.019 Verify view-mode switch round-trip (click → render) is < 1 s p95 <AUTOMATION>
+    <TBD>TC.CAL.002.020 Verify Prev / Next navigation render is < 1 s p95 <AUTOMATION>
+
+[Interoperability / Cross-cutting] NA
+
+[Accessibility]
+    <TBD>TC.CAL.002.021 Verify keyboard arrow navigation moves the visible date window <MANUAL>
+    <TBD>TC.CAL.002.022 Verify view-mode toggles are reachable via Tab + actionable via Enter <MANUAL>
+
+[Negative tests]
+    <TBD>TC.CAL.002.023 Verify navigation to a far-future date the server has no data for renders an empty grid (not an error) <MANUAL>
+
+[Security / Vulnerability] NA

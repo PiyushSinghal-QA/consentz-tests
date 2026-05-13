@@ -1,0 +1,25 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.CAL.001.040 — Booking flow works in Chrome, Firefox, Edge AND on tablet 768-1024 px AND mobile <768 px
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Book Appointment (CAL.001)
+Section     : [Interoperability / Cross-cutting]
+Tags        : <TBD> <MANUAL>
+Status      : STUB — see [Steps] block below for status of detailed reproduction
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  STUB — to be expanded on first manual execution.
+  Intent: Booking flow works in Chrome, Firefox, Edge AND on tablet 768-1024 px AND mobile <768 px
+
+[Expected]
+  STUB — to be filled in alongside the [Steps] block above.
+
+[Postconfiguration]
+  NA — case does not modify persistent state.

@@ -1,0 +1,43 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.SMOKE.001.050 — Logs › Blockers — /admin/clinics/3/blockers
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Per-Page Load Smoke — Super-User Scope (SMOKE.001)
+Section     : [Functionality]
+Tags        : <AUTOMATION> <BUG:K1>
+Status      : Active regression — automation marked test.fail() until K1 closes
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  1. Open the side-nav and expand the "Logs" group.
+  2. Click "Blockers" (or navigate directly to
+     https://staging.consentz.com/admin/clinics/3/blockers).
+  3. Open browser DevTools → Network panel BEFORE the click so the
+     response status for the /blockers document request is captured.
+
+[Expected]
+  • The page returns HTTP 200 and renders the Blockers table (or an
+    empty-state if there are no blockers).
+  • No Symfony / PHP error stack trace is visible in the response body.
+
+[Actual — open bug K1]
+  • The /admin/clinics/3/blockers document request returns HTTP 500.
+  • Response body contains the Symfony error:
+    "Impossible to access an attribute ('name') on a null variable".
+  • Page renders the Symfony error overlay instead of the Blockers UI.
+
+[Notes]
+  • Automation: tests/page-smokes.spec.ts uses test.fail() so the suite
+    stays green while the regression stays visible. When K1 is fixed in
+    the application, the test will start passing and the test.fail()
+    marker should be removed.
+  • Severity per TESTPLAN.md §10.3: Major.
+
+[Postconfiguration]
+  NA — case does not modify persistent state.

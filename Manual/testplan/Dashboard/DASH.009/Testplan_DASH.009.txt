@@ -1,0 +1,51 @@
+[META]
+    Testname     = DASH.009
+    Longname     = DASH.009 (Robustness — Console / Network / Session)
+    Module       = Dashboard
+    Flags        = DASH, P1, ROBUSTNESS, DASH.009
+
+[Default settings]
+    TC.DASH.009.001 Verify dashboard initial load produces zero console errors AND zero 4xx / 5xx XHR responses <AUTOMATION>
+    <TBD>TC.DASH.009.003 Verify dashboard initial load produces zero failed image / asset requests <AUTOMATION>
+
+[Feature configuration]
+    NA
+
+[State persistence / changes handling]
+    <TBD>TC.DASH.009.004 Verify session cookie expiry redirects to /admin/login (not blank page) <MANUAL>
+    <TBD>TC.DASH.009.005 Verify dashboard recovers gracefully after a brief network blip during widget XHRs <MANUAL>
+    <TBD>TC.DASH.009.006 Verify dashboard handles a backend deploy / restart mid-session (in-flight XHRs error cleanly) <MANUAL>
+
+[Logs / Notifications / Audit]
+    <TBD>TC.DASH.009.007 Verify no console warnings during dashboard load (deprecation warnings flagged for follow-up) <AUTOMATION>
+    <TBD>TC.DASH.009.008 Verify all error responses are surfaced to the user (no silent failures) <MANUAL>
+
+[Boundary conditions / Limitations]
+    <TBD>TC.DASH.009.009 Verify dashboard with throttled network (Slow 3G) still becomes interactive within 30 seconds <MANUAL>
+    <TBD>TC.DASH.009.010 Verify dashboard does not break with browser memory constrained (~100 MB tab limit simulated) <MANUAL>
+
+[Functionality]
+    <TBD>TC.DASH.009.011 Verify rapid alternation between two clinics does not corrupt widget data <MANUAL>
+    <TBD>TC.DASH.009.012 Verify dashboard works after extended idle (30+ minutes) <MANUAL>
+    <TBD>TC.DASH.009.013 Verify dashboard in two browser tabs simultaneously stays consistent (or last-write-wins documented) <MANUAL>
+
+[Load / Performance]
+    <TBD>TC.DASH.009.014 Verify Web Vitals on broadband: Time-To-Interactive < 5s, Largest Contentful Paint < 4s, Cumulative Layout Shift < 0.1 <MANUAL>
+
+[Interoperability / Cross-cutting]
+    <TBD>TC.DASH.009.017 Verify dashboard renders consistently across Chrome, Firefox, Edge, Safari <MANUAL>
+    <TBD>TC.DASH.009.018 Verify dashboard works with browser extensions disabled and enabled (ad-blockers can break analytics) <MANUAL>
+
+[Accessibility]
+    <TBD>TC.DASH.009.019 Verify automated accessibility scan (axe-core / lighthouse) reports score >= 90 <MANUAL>
+    <TBD>TC.DASH.009.020 Verify keyboard-only user can complete all primary dashboard interactions <MANUAL>
+
+[Negative tests]
+    TC.DASH.009.021 Verify dashboard URL with invalid clinic id (e.g. /admin/clinics/9999/dashboard) returns 403 / 404, redirects, or otherwise does not render a blank fake dashboard <AUTOMATION>
+    <TBD>TC.DASH.009.022 Verify dashboard URL with malformed clinic id (e.g. abc) returns sensible error <MANUAL>
+    <TBD>TC.DASH.009.023 Verify dashboard handles Content-Security-Policy violations gracefully <MANUAL>
+
+[Security / Vulnerability]
+    <TBD>TC.DASH.009.024 Verify direct dashboard URL without auth redirects to login AND user cannot view another clinic's dashboard via URL tampering (server-side authorisation enforced for clinic id in URL) <MANUAL>
+    <TBD>TC.DASH.009.025 Verify dashboard does not expose sensitive internal data in HTML / JS bundles <MANUAL>
+

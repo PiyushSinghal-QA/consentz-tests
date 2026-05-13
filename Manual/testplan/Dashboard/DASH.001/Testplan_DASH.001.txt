@@ -1,0 +1,63 @@
+[META]
+    Testname     = DASH.001
+    Longname     = DASH.001 (Time Period Filter)
+    Module       = Dashboard
+    Flags        = DASH, P0, FILTER, DATE-RANGE, DASH.001
+
+[Default settings]
+    TC.DASH.001.001 Verify default selection of Time Period dropdown on first dashboard load <AUTOMATION>
+    TC.DASH.001.002 Verify Apply button is visible by default <AUTOMATION>
+    TC.DASH.001.003 Verify From / To date inputs are NOT visible by default unless default option is "Custom Range" <AUTOMATION>
+    <TBD>TC.DASH.001.004 Verify tooltip / help text on Time Period dropdown <MANUAL>
+
+[Feature configuration]
+    TC.DASH.001.005 Verify Time Period dropdown lists exactly four options: Today, This Week, This Month, Custom Range <AUTOMATION>
+    TC.DASH.001.006 Verify selecting "Today" hides From/To inputs and keeps Apply visible <AUTOMATION>
+    TC.DASH.001.007 Verify selecting "This Week" hides From/To inputs and keeps Apply visible <AUTOMATION>
+    TC.DASH.001.008 Verify selecting "This Month" hides From/To inputs and keeps Apply visible <AUTOMATION>
+    TC.DASH.001.009 Verify selecting "Custom Range" reveals From and To inputs alongside Apply <AUTOMATION>
+    <TBD>TC.DASH.001.010 Verify From / To inputs accept date entry via the native date picker <MANUAL>
+    <TBD>TC.DASH.001.011 Verify URL query string can pre-populate the date filter where supported <MANUAL>
+
+[State persistence / changes handling]
+    <TBD>TC.DASH.001.012 Verify Time Period selection persists across page reload <MANUAL>
+    <TBD>TC.DASH.001.013 Verify Time Period selection resets to default after logout / login <MANUAL>
+    <TBD>TC.DASH.001.014 Verify Time Period selection persists when switching clinics and switching back <MANUAL>
+    <TBD>TC.DASH.001.015 Verify browser back / forward preserves the selected Time Period option <MANUAL>
+
+[Logs / Notifications / Audit]
+    <TBD>TC.DASH.001.016 Verify no console errors AND no 4xx / 5xx XHRs when changing or applying a Time Period filter <AUTOMATION>
+
+[Boundary conditions / Limitations]
+    <TBD>TC.DASH.001.018 Verify From date can be set to clinic creation date (historical extreme) <MANUAL>
+    <TBD>TC.DASH.001.019 Verify To date cannot exceed today (future-date guard) <MANUAL>
+    TC.DASH.001.020 Verify Custom Range with From == To (single-day window) renders correctly <AUTOMATION>
+    <TBD>TC.DASH.001.021 Verify Custom Range spanning > 1 year still renders without truncation <MANUAL>
+
+[Functionality]
+    <TBD>TC.DASH.001.022 Verify dropdown opens on click and closes on outside click <MANUAL>
+    <TBD>TC.DASH.001.023 Verify clicking Apply with each option triggers a widget data refresh <MANUAL>
+    TC.DASH.001.024 Verify "Last updated:" timestamp advances after Apply is clicked <AUTOMATION>
+    <TBD>TC.DASH.001.025 Verify all rendered widgets reflect the chosen time period in their data window <MANUAL>
+    <TBD>TC.DASH.001.026 Verify rapid switching between options (Today → This Week → Custom Range → ...) leaves UI in consistent state <MANUAL>
+
+[Load / Performance]
+    <TBD>TC.DASH.001.027 Verify Apply remains responsive with the longest valid range (5+ years) AND on clinics with high invoice / patient volume <MANUAL>
+
+[Interoperability / Cross-cutting]
+    <TBD>TC.DASH.001.029 Verify Time Period filter renders identically across Chrome, Firefox, Edge AND on tablet (768-1024px) + mobile (<768px) viewports <MANUAL>
+
+[Accessibility]
+    <TBD>TC.DASH.001.032 Verify Time Period filter row is keyboard navigable (Tab to focus, Enter / Space to open, Arrow to select) with logical focus order (Period → From → To → Apply) <MANUAL>
+    <TBD>TC.DASH.001.033 Verify From / To inputs have visible labels readable by screen reader <MANUAL>
+    <TBD>TC.DASH.001.035 Verify dropdown options have sufficient colour contrast (WCAG AA) <MANUAL>
+
+[Negative tests]
+    <TBD>TC.DASH.001.036 Verify Custom Range with To < From — error / silent swap / blocked Apply <MANUAL>
+    <TBD>TC.DASH.001.037 Verify Custom Range with malformed date input (e.g. typed garbage) <MANUAL>
+    TC.DASH.001.038 Verify Apply with both From and To empty does not break the dashboard <AUTOMATION>
+    <TBD>TC.DASH.001.039 Verify Apply when offline (network disconnected) shows graceful error <MANUAL>
+
+[Security / Vulnerability]
+    <TBD>TC.DASH.001.040 Verify From / To input fields AND URL query parameters sanitise XSS / injection payloads <MANUAL>
+

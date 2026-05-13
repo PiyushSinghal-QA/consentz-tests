@@ -1,0 +1,56 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.DASH.005.041 — Widget Library tiles visually indicate which widgets are already on the dashboard ("selected" / "in use" state, e.g. distinct background or badge) — manual until indicator selector is identified
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Add Widget / Widget Library (DASH.005)
+Section     : [Functionality]
+Tags        : <TBD> <MANUAL> <BUG:K18>
+Status      : Manual until a "selected" / "in use" indicator selector is identified — see Notes
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard with the demo's
+                  default 6 widgets present (Billings per Coordinator,
+                  Billings per Practitioner, Reconciliation, Average
+                  Spend per Patient, Appointments, Cancellations).
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  1. Click "Add Widget" in the top toolbar to open the Widget Library
+     sidebar.
+  2. For each of the 6 default widgets above, locate the matching tile
+     in the Library (note: Library labels may differ slightly from the
+     grid widget headers — e.g. "Average Spend" tile maps to the
+     "Average Spend per Patient" grid widget).
+  3. Visually compare each "already on dashboard" tile to a tile that
+     is NOT yet on the dashboard (e.g. "Refunds" or "Vouchers").
+
+[Expected]
+  • Tiles for widgets already on the dashboard show a clear visual
+    differentiation from un-added tiles (any of: a "✓" / "Added" badge,
+    a different background colour, a checked checkbox, a disabled
+    state, an "in use" pill, etc.).
+  • The user can answer "is this widget already on my dashboard?" by
+    looking at the Library tile alone, without having to scroll the
+    grid behind it.
+
+[Actual — open bug K18]
+  • All Library tiles render identically regardless of whether the
+    corresponding widget is on the dashboard.
+  • User has no in-Library affordance to know which widgets are
+    duplicates — feeds directly into K19 (re-click error message).
+
+[Notes]
+  • Severity per TESTPLAN.md §10.3: Major.
+  • Tightly related to K19 (re-click should toggle, currently errors).
+    Once an indicator is added, the toggle behaviour becomes
+    discoverable.
+  • Automation deferred until the engineering fix introduces a stable
+    selector for the "selected" state. When that happens, this case
+    should pivot to AUTOMATION and assert: for each default-widget
+    Library tile, the tile carries the agreed selected-state marker.
+
+[Postconfiguration]
+  NA — case does not modify persistent state.

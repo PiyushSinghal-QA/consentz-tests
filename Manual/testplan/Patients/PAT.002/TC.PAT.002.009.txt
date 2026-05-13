@@ -1,0 +1,25 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.PAT.002.009 — Gender / pronoun selector lists the configured options
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Add Patient (PAT.002)
+Section     : [Feature configuration]
+Tags        : <TBD> <MANUAL>
+Status      : STUB — see [Steps] block below for status of detailed reproduction
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  STUB — to be expanded on first manual execution.
+  Intent: Gender / pronoun selector lists the configured options
+
+[Expected]
+  STUB — to be filled in alongside the [Steps] block above.
+
+[Postconfiguration]
+  NA — case does not modify persistent state.

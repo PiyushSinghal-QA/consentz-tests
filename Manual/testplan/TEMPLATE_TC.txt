@@ -1,0 +1,68 @@
+# =============================================================================
+# Consentz Web App — Manual Test Case Template (per sub-feature)
+# =============================================================================
+# Convention: ONE manual file per sub-feature, holding detailed reproduction
+# steps for every TC in that sub-feature. The hierarchical TC ID's middle
+# segment (TC.<MODULE>.<SUB>.<NNN>) defines the sub-feature; the file name
+# is `TC.<MODULE>.<SUB>.txt`.
+#
+# Example: testplan/dashboard/manual/TC.DASH.001.txt covers all 41 cases
+# under Dashboard's Time Period Filter sub-feature (TC.DASH.001.001 through
+# TC.DASH.001.041).
+#
+# This is preferred over one-file-per-TC because it:
+#   - keeps related cases together (shared preconditions stated once)
+#   - reduces clutter (9 files per page module instead of ~270)
+#   - makes review easier — open one file to see every scenario for the
+#     sub-feature
+# =============================================================================
+
+═══════════════════════════════════════════════════════════════════════════════
+ Manual test cases — <Module> › <Sub-feature name> (.<NNN>)
+ Source plan: testplan/<module>/<MODULE>.txt
+ Cases:       TC.<MODULE>.<NNN>.001 through TC.<MODULE>.<NNN>.<lastNNN>
+═══════════════════════════════════════════════════════════════════════════════
+
+[Common preconfiguration]
+Description       = What state the system must be in before any case in
+                    this file. Stated once here; per-case Steps below
+                    reference "Common preconfiguration" by name.
+Account           = <super-user | admin | practitioner | ...>
+Browser           = <Chrome | Firefox | Edge | Safari> (latest stable)
+Steps             = 1. <numbered action>
+                    2. <numbered action>
+                    ...
+
+[Common postconfiguration]            (optional — only if applicable)
+Description       = What state to restore so the next case starts clean.
+Steps             = 1. ...
+                    2. ...
+
+═══════════════════════════════════════════════════════════════════════════════
+ [Default settings]
+═══════════════════════════════════════════════════════════════════════════════
+
+──────────────────────────────────────────────────────────────────────────────
+ TC.<MODULE>.<NNN>.<NNN> — <Brief title of what is verified>
+ Tags: <AUTOMATION | MANUAL | TBD AUTOMATION | TBD MANUAL | BUG:K?>
+──────────────────────────────────────────────────────────────────────────────
+Steps     : Common preconfiguration. <Concise list of steps for this case.>
+Expected  : <What the tester should observe / verify.>
+Notes     : <Optional — bug references, edge cases, related TCs.>
+
+# Use the same `Steps:` / `Expected:` block per case. Keep it concise for
+# AUTOMATION cases (the spec is the canonical source of truth) and longer
+# for MANUAL cases that humans actually execute.
+
+═══════════════════════════════════════════════════════════════════════════════
+ [Feature configuration]
+═══════════════════════════════════════════════════════════════════════════════
+
+# Same per-case format. Section headings match the test plan's section
+# headings exactly: [Default settings], [Feature configuration],
+# [State persistence / changes handling], [Logs / Notifications / Audit],
+# [Boundary conditions / Limitations], [Functionality], [Load / Performance],
+# [Interoperability / Cross-cutting], [Accessibility], [Negative tests],
+# [Security / Vulnerability].
+#
+# A section may be `NA` if no cases apply.

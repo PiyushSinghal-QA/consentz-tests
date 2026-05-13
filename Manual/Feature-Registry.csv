@@ -1,0 +1,23 @@
+Module,Feature ID,Feature Name,Priority,Total Cases,Automated,Manual / TBD,Plan Path
+Calendar,CAL.001,Book Appointment,P0,54,5,49,Manual/testplan/Calendar/CAL.001/Testplan_CAL.001.txt
+Calendar,CAL.002,Calendar Grid & Navigation,P1,23,4,19,Manual/testplan/Calendar/CAL.002/Testplan_CAL.002.txt
+Dashboard,DASH.001,Time Period Filter,P0,35,11,24,Manual/testplan/Dashboard/DASH.001/Testplan_DASH.001.txt
+Dashboard,DASH.002,Page Identity & Chrome,P0,25,10,15,Manual/testplan/Dashboard/DASH.002/Testplan_DASH.002.txt
+Dashboard,DASH.003,Refresh Button,P0,19,7,12,Manual/testplan/Dashboard/DASH.003/Testplan_DASH.003.txt
+Dashboard,DASH.004,Export PDF,P1,25,2,23,Manual/testplan/Dashboard/DASH.004/Testplan_DASH.004.txt
+Dashboard,DASH.005,Add Widget / Widget Library,P0,38,17,21,Manual/testplan/Dashboard/DASH.005/Testplan_DASH.005.txt
+Dashboard,DASH.006,Widget Grid & Per-Widget Controls,P0,31,3,28,Manual/testplan/Dashboard/DASH.006/Testplan_DASH.006.txt
+Dashboard,DASH.007,Welcome Modal & Watch Intro,P2,25,0,25,Manual/testplan/Dashboard/DASH.007/Testplan_DASH.007.txt
+Dashboard,DASH.008,Clinic Switcher,P0,27,10,17,Manual/testplan/Dashboard/DASH.008/Testplan_DASH.008.txt
+Dashboard,DASH.009,Robustness — Console / Network / Session,P1,22,2,20,Manual/testplan/Dashboard/DASH.009/Testplan_DASH.009.txt
+Messaging,MSG.001,Per-record Send Icons — Patients / Prospects / Clinics,P0,40,0,40,Manual/testplan/Messaging/MSG.001/Testplan_MSG.001.txt
+Messaging,MSG.002,Email Builder,P1,20,0,20,Manual/testplan/Messaging/MSG.002/Testplan_MSG.002.txt
+Messaging,MSG.003,Campaign Manager — bulk send,P1,23,0,23,Manual/testplan/Messaging/MSG.003/Testplan_MSG.003.txt
+Messaging,MSG.004,Correspondence Log,P2,14,0,14,Manual/testplan/Messaging/MSG.004/Testplan_MSG.004.txt
+Messaging,MSG.005,Settings → Messaging / Reminders,P2,11,0,11,Manual/testplan/Messaging/MSG.005/Testplan_MSG.005.txt
+Patients,PAT.001,Patients List Page,P1,16,4,12,Manual/testplan/Patients/PAT.001/Testplan_PAT.001.txt
+Patients,PAT.002,Add Patient,P0,44,0,44,Manual/testplan/Patients/PAT.002/Testplan_PAT.002.txt
+Patients,PAT.003,Patient Search,P0,32,3,29,Manual/testplan/Patients/PAT.003/Testplan_PAT.003.txt
+Patients,PAT.FLOW,Patient lifecycle — cross-feature integration,P0,11,0,11,Manual/testplan/Patients/PAT.FLOW/Testplan_PAT.FLOW.txt
+Smoke (cross-cutting),SMOKE.001,Per-Page Load Smoke — Super-User Scope,P0,59,59,0,Manual/testplan/Smoke/SMOKE.001/Testplan_SMOKE.001.txt
+,,,Totals,594,137,457,

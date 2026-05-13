@@ -1,0 +1,65 @@
+[META]
+    Testname     = CAL.FLOW
+    Longname     = CAL.FLOW (Calendar lifecycle — cross-feature integration)
+    Module       = Calendar
+    Flags        = CAL, P0, FLOW, INTEGRATION, BOOKING, CTO, CAL.FLOW
+
+# Cross-feature integration journeys for Calendar — CTO-flagged hot
+# spot ("issues with Booking Appointments and other things"). Each TC
+# walks a user journey end-to-end across the Calendar surface, the
+# embedded booking sheet, and the embedded Add Patient sub-modal.
+#
+# Selectors anchored on the live markup probed via
+#   `npm run explore:calendar-flow`
+# (output: Automation/calendar-flow-probe.json) and the prior CTO probe
+# (Automation/cto-flows-probe.json).
+#
+# Implementation: tests/calendar/calendar-flow.spec.ts — single spec
+# file with `test.describe.serial` and an `afterAll` cleanup that
+# deletes every appointment + patient this run created.
+#
+# Scope notes:
+#   • The 4 bottom-right CTAs include #new_meeting, #new_instantmeeting
+#     and Create Event in addition to Book Appointment. This plan covers
+#     ONLY Book Appointment in depth; meetings + events get presence
+#     checks in CAL.FLOW.002 only and own deeper plans later.
+#   • Treatment + Practitioner field exercise is parked as a placeholder
+#     — those drop-downs depend on per-clinic config and need the data
+#     factory layer (Sprint A item) before automation pays off.
+
+[Default settings] NA — flow cases assume preconditions; setup is in [Steps]
+
+[Feature configuration] NA
+
+[State persistence / changes handling] NA
+
+[Logs / Notifications / Audit] NA
+
+[Boundary conditions / Limitations] NA
+
+[Functionality]
+    <TBD>TC.CAL.FLOW.001 Verify navigation to Calendar via BOTH the top-bar Calendar icon (a.nav-link[title="Calendar"]) AND the side-bar Calendar link (.sidebar a[href$="/appointments/calendar"]): each click lands on /admin/clinics/{id}/appointments/calendar with the FullCalendar grid rendered (.fc-agendaWeek-button visible) AND the inline mini-datepicker (.datepicker.datepicker-inline) visible. Navigating back to the dashboard works between the two clicks. <AUTOMATION>
+    <TBD>TC.CAL.FLOW.002 Verify the Calendar page renders ALL expected chrome elements: mini-datepicker (.datepicker.datepicker-inline) on the page; view-mode toggles Day (.fc-agendaDay-button) / Week (.fc-agendaWeek-button) / Month (.fc-month-button); a "Today" button reachable via [class*="fc-today"] or text "Today"; "Day Sheet" anchor; "Task Board" anchor; four booking entry points (#new_appointment "Book Appointment" / #new_meeting "Book Meeting" / #new_instantmeeting "Instant Meeting" / Create Event link with href ending /events). <AUTOMATION>
+    <TBD>TC.CAL.FLOW.003 Verify calendar interactivity: (a) clicking a non-today day cell on the mini-datepicker (.datepicker.datepicker-inline .day:not(.disabled,.old,.new)) updates the FullCalendar grid (the toolbar's currently-active view re-renders with the chosen date in scope); (b) clicking the "Today" button after navigating away returns the FullCalendar grid to today's date (today's day-cell carries an "active" / "today" class on the mini-datepicker); (c) clicking each of Day/Week/Month view-mode toggles renders the corresponding view without console errors. <AUTOMATION>
+    <TBD>TC.CAL.FLOW.004 Verify Book Appointment HAPPY PATH end-to-end: click #new_appointment → modal #new_appointment_form opens with title "Create Appointment" → click "Add Patient" inside the modal → sub-modal #new_patient_form opens → fill required fields (patient_firstName / patient_lastName / patient_countryCode / patient_phone) → click #confirm-patient-form → sub-modal closes → typeahead #appointment_patient is auto-populated with "FirstName LastName" → fill #appointment_start + #appointment_end → click #save_appointment → modal closes → appointment block appears on the FullCalendar grid (.fc-event) carrying the patient's name within 5 s. <AUTOMATION>
+    <TBD>TC.CAL.FLOW.005 Verify bulk-book 5 patients × 5 appointments: in a single test run, repeat the FLOW.004 happy path 5 times — 5 unique markered patients (created via the in-modal #new_patient_form), 5 distinct timeslots (NOT overlapping). All 5 appointments must appear on the grid as .fc-event blocks bearing the respective patient names. Capture per-iteration cycle timing (T1..T5); assert max(T2..T5) < T1 * 2.5 (no significant regression). <AUTOMATION>
+    <TBD>TC.CAL.FLOW.006 Verify multiple patients booked into the SAME time slot: take 2 of the 5 markered patients from FLOW.005 → book each into the SAME start/end window via #new_appointment → both bookings succeed (no conflict error fires) → both .fc-event blocks render at the same slot, distinguishable by patient name. (If the app DOES enforce same-slot exclusion as a business rule, document the actual error path — this case becomes a regression watch.) <AUTOMATION>
+    <TBD>TC.CAL.FLOW.007 Verify same patient booked at MULTIPLE different times: take 1 of the 5 markered patients → book 3 distinct, non-overlapping appointments for them → all 3 .fc-event blocks render. Then click into the patient detail page (/patients/{id}/appointments) AND verify all 3 appointments are listed. <AUTOMATION>
+    <TBD>TC.CAL.FLOW.008 Verify duplicate-appointment behaviour — same patient AT THE SAME TIME: attempt to book the same patient into a slot already occupied by an existing appointment for that patient. Capture the actual app behaviour: silent success (creates a duplicate row), silent failure (no event added, no error), explicit error (toast / inline message), or block (Save disabled). Document the observed behaviour as the assertion target so a regression flips the test red. <AUTOMATION>
+    <TBD>TC.CAL.FLOW.009 Verify the booking modal exposes ALL expected option checkboxes — #appointment_allDay (label "All Day"), #appointment_repeat ("Repeat"), #appointment_newPatient ("New Patient"), #appointment_blocker ("Blocker"). Each checkbox must be reachable, default-state asserted (typically all unchecked), AND togglable. The two additional checkboxes #appointment_surveySend ("Send Form(s)") and #appointment_videoApt ("Video") are presence-asserted only; their behaviour is deferred. <AUTOMATION>
+    <TBD>TC.CAL.FLOW.010 Treatment + Practitioner selection — placeholder, deferred. Treatment dropdown #appointment_treatmentClinic and practitioner dropdown #appointment_clinicUser are populated per-clinic; full coverage requires the data-factory layer + per-treatment fixture seeding. For now this case asserts both dropdowns exist + have at least one selectable option. Detail behaviour deferred. <TBD-DEFERRED> <MANUAL>
+
+[Load / Performance]
+    <TBD>TC.CAL.FLOW.011 Verify booking-cycle timing does not regress over the 5 sequential bookings in FLOW.005: per-iteration cycle = (open modal → fill form → submit → event appears on grid). Assert each individual cycle < 30 s p100 AND max(T2..T5) < T1 * 2.5. <AUTOMATION>
+
+[Interoperability / Cross-cutting] NA
+
+[Accessibility] NA
+
+[Negative tests]
+    <TBD>TC.CAL.FLOW.012 Verify booking with no patient selected surfaces a clear error AND does NOT create an event on the grid. Same shape for End < Start. <AUTOMATION>
+    <TBD>TC.CAL.FLOW.013 Verify delete-schedule (appointment cancellation) flow: pick an existing appointment on the calendar grid (.fc-event for one of the bulk-booked test patients), click into it to open the detail modal (#detailsEvent or equivalent), click the Delete / Cancel button, accept any confirmation prompt, verify the .fc-event for that patient disappears from the grid AND a search of the patient detail page confirms the appointment is no longer listed. The same flow doubles as the appointment-cleanup path for afterAll. <AUTOMATION>
+    <TBD>TC.CAL.FLOW.014 Verify Calendar module endpoint sweep — for every known calendar-scoped URL (/appointments/calendar, /events, and for an existing appointment /appointments/{id}/edit), navigate the browser, assert HTTP status < 400, assert visible content (assertPageLoaded), AND assert the page-noise listener observes no console errors / no 4xx / no 5xx / no UI error flashes. Also exercise interactive permutations on the calendar page: cycle Day → Week → Month view 3 times each direction; navigate Prev / Next at least 6 times forward and 6 times back; open + close (without submitting) the four bottom-right modals — Book Appointment (#new_appointment_form) / Book Meeting / Instant Meeting / Create Event (just-navigates); open + close the in-booking Add Patient sub-modal (#new_patient_form). Each permutation must NOT throw 4xx/5xx and the page must remain interactive. <AUTOMATION>
+
+[Security / Vulnerability] NA
+

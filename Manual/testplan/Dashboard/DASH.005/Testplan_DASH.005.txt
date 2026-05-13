@@ -1,0 +1,66 @@
+[META]
+    Testname     = DASH.005
+    Longname     = DASH.005 (Add Widget / Widget Library)
+    Module       = Dashboard
+    Flags        = DASH, P0, WIDGET, LIBRARY, DASH.005
+
+[Default settings]
+    TC.DASH.005.001 Verify Add Widget button is visible in the top toolbar by default <AUTOMATION>
+    TC.DASH.005.002 Verify floating sticky Add Widget button is visible (bottom-right) <AUTOMATION>
+    TC.DASH.005.003 Verify Widget Library sidebar is closed by default (no .active class) <AUTOMATION>
+    <TBD>TC.DASH.005.004 Verify tooltip / aria-label on Add Widget buttons <MANUAL>
+
+[Feature configuration]
+    TC.DASH.005.005 Verify clicking the toolbar Add Widget button opens the Widget Library sidebar (.active class added) <AUTOMATION>
+    <TBD>TC.DASH.005.006 Verify clicking the sticky Add Widget button also opens the Widget Library <AUTOMATION>
+    TC.DASH.005.007 Verify Widget Library sidebar lists exactly 5 categories: Appointments, Patients, Financial, Communication, Practitioner Reports <AUTOMATION>
+    TC.DASH.005.008 Verify "Appointments" category lists: Appointments, New Patient Appointments, Cancellations, Patient List by Treatment <AUTOMATION>
+    TC.DASH.005.009 Verify "Patients" category lists: Customer Base, Prospects, Recency, Frequency of Visit, Retention, Patient Referrals <AUTOMATION>
+    TC.DASH.005.010 Verify "Financial" category lists: Average Spend, Receipts, Net Receipts, Refunds, Prepayments Balance, Reconciliation, Unpaid Report, Vouchers, Terminals End of Day <AUTOMATION>
+    TC.DASH.005.011 Verify "Communication" category lists: Mailing List, SMS Messages Sent <AUTOMATION>
+    TC.DASH.005.012 Verify "Practitioner Reports" category lists: Billings per Practitioner, Revenue per Practitioner, Billings per Period, Revenue per Period, Billings per Coordinator <AUTOMATION>
+    TC.DASH.005.013 Verify clicking the overlay closes the Widget Library (.active class removed) <AUTOMATION>
+    <TBD>TC.DASH.005.014 Verify a dedicated close (×) button on the sidebar also closes the library <MANUAL>
+
+[State persistence / changes handling]
+    <TBD>TC.DASH.005.015 Verify added widgets persist across page reload <MANUAL>
+    <TBD>TC.DASH.005.016 Verify widget layout persists per-clinic when switching clinics and back <MANUAL>
+    <TBD>TC.DASH.005.017 Verify Widget Library sidebar state does NOT persist (always closed on reload) <MANUAL>
+
+[Logs / Notifications / Audit]
+    TC.DASH.005.018 Verify no console errors when opening / closing the Widget Library <AUTOMATION>
+    <TBD>TC.DASH.005.019 Verify no 4xx / 5xx XHRs during widget add operation <MANUAL>
+
+[Boundary conditions / Limitations]
+    <TBD>TC.DASH.005.020 Verify attempting to add a 7th widget triggers the cap message ("You have reached the maximum number of widgets (6). Please remove a widget before adding a new one.") AND that message auto-dismisses after a few seconds <MANUAL>
+    <TBD>TC.DASH.005.022 Verify removing a widget after hitting cap allows adding a new one <MANUAL>
+
+[Functionality]
+    <TBD>TC.DASH.005.023 Verify adding a widget inserts it into the grid and persists <MANUAL>
+    <TBD>TC.DASH.005.024 Verify adding the same widget twice — allowed or blocked? (document actual behaviour) <MANUAL>
+    <TBD>TC.DASH.005.025 Verify each widget tile in the Library shows an add affordance (button or click) <MANUAL>
+    <TBD>TC.DASH.005.026 Verify widgets are searchable / filterable in the Library if a search box exists <MANUAL>
+    TC.DASH.005.037 Verify every widget in the Library can be added to the dashboard, renders correctly, and can be removed (crawler walks all 26 tiles per WIDGET_LIBRARY catalogue; 3 known-broken widgets in KNOWN_BROKEN_WIDGETS are skipped — see K-bugs) <AUTOMATION>
+    TC.DASH.005.038 Verify "Patient Referrals" widget add behaviour — bug regression for K2 (test.fail: clicking the Library tile silently produces no on-grid widget) <AUTOMATION> <BUG:K2>
+    TC.DASH.005.039 Verify "Receipts" widget add behaviour — bug regression for K3 (test.fail: clicking the Library tile silently produces no on-grid widget) <AUTOMATION> <BUG:K3>
+    TC.DASH.005.040 Verify "Revenue per Period" widget add behaviour — bug regression for K4 (test.fail: clicking the Library tile silently produces no on-grid widget) <AUTOMATION> <BUG:K4>
+    <TBD>TC.DASH.005.041 Verify Widget Library tiles visually indicate which widgets are already on the dashboard ("selected" / "in use" state, e.g. distinct background or badge) — manual until indicator selector is identified <MANUAL> <BUG:K18>
+    TC.DASH.005.042 Verify re-clicking a Library tile that is already on the dashboard removes the widget from the grid (toggle behaviour); test.fail until K19 fixed — currently shows "Widget already exists" or the 6-cap message instead of removing <AUTOMATION> <BUG:K19>
+
+[Load / Performance]
+    <TBD>TC.DASH.005.027 Verify Widget Library opens within 1 second AND added widget renders data within 5 seconds <MANUAL>
+
+[Interoperability / Cross-cutting]
+    <TBD>TC.DASH.005.029 Verify Widget Library renders correctly across Chrome, Firefox, Edge AND animates correctly on tablet / mobile viewports <MANUAL>
+
+[Accessibility]
+    <TBD>TC.DASH.005.031 Verify Widget Library traps focus while open AND closes on ESC <MANUAL>
+    <TBD>TC.DASH.005.033 Verify category headings are screen-reader reachable (proper landmark / heading levels) <MANUAL>
+
+[Negative tests]
+    <TBD>TC.DASH.005.034 Verify rapid open / close clicks don't leave the sidebar in an inconsistent state <MANUAL>
+    <TBD>TC.DASH.005.035 Verify adding a widget while offline shows a graceful error <MANUAL>
+
+[Security / Vulnerability]
+    <TBD>TC.DASH.005.036 Verify Widget Library content respects role permissions (e.g. Practitioner Reports hidden for non-admin roles) <MANUAL>
+

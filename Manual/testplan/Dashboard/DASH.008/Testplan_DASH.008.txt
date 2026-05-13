@@ -1,0 +1,55 @@
+[META]
+    Testname     = DASH.008
+    Longname     = DASH.008 (Clinic Switcher)
+    Module       = Dashboard
+    Flags        = DASH, P0, CLINIC, SWITCHER, DASH.008
+
+[Default settings]
+    TC.DASH.008.001 Verify clinic switcher trigger is visible at the top-left of the dashboard <AUTOMATION>
+    TC.DASH.008.002 Verify trigger shows the currently active clinic name + caret indicator <AUTOMATION>
+    <TBD>TC.DASH.008.003 Verify the demo super-user lands on Beautify Clinic (id=3) by default <AUTOMATION>
+
+[Feature configuration]
+    TC.DASH.008.004 Verify clicking the trigger opens a dropdown listing all clinics the user has access to <AUTOMATION>
+    TC.DASH.008.005 Verify the dropdown lists at least 2 clinics for the demo user <AUTOMATION>
+    <TBD>TC.DASH.008.006 Verify the dropdown lists exactly 9 clinics for the demo user (current known topology) <MANUAL>
+    TC.DASH.008.007 Verify selecting a different clinic navigates to that clinic's dashboard URL <AUTOMATION>
+    <TBD>TC.DASH.008.008 Verify the dropdown highlights / marks the currently active clinic <MANUAL>
+
+[State persistence / changes handling]
+    <TBD>TC.DASH.008.009 Verify the last-selected clinic is the landing clinic on next login (or always defaults to id=3) <MANUAL>
+    <TBD>TC.DASH.008.010 Verify switching clinic preserves widget layout per-clinic <MANUAL>
+    <TBD>TC.DASH.008.011 Verify URL becomes /admin/clinics/{newId}/dashboard immediately after switching <AUTOMATION>
+
+[Logs / Notifications / Audit]
+    TC.DASH.008.012 Verify no console errors AND no 4xx / 5xx XHRs during clinic switch (K9/K10 ignored — see 030/031 for those) <AUTOMATION>
+    TC.DASH.008.030 Verify clinic switch does NOT raise "Cannot convert undefined or null to object" (test.fail until K9 fixed) <AUTOMATION> <BUG:K9>
+    TC.DASH.008.031 Verify clinic switch does NOT raise "No method named 'destroy'" (test.fail until K10 fixed) <AUTOMATION> <BUG:K10>
+
+[Boundary conditions / Limitations]
+    <TBD>TC.DASH.008.014 Verify a user with only 1 clinic still sees the trigger but the dropdown contains only that clinic <MANUAL>
+    <TBD>TC.DASH.008.015 Verify a user with 50+ clinics — dropdown scrolls / paginates <MANUAL>
+
+[Functionality]
+    TC.DASH.008.016 Verify the new clinic's dashboard renders content (URL + heading visible) <AUTOMATION>
+    TC.DASH.008.017 Verify dashboard heading updates to "Dashboard - <New Clinic Name>" <AUTOMATION>
+    <TBD>TC.DASH.008.018 Verify clicking outside the dropdown closes it without selecting <MANUAL>
+    <TBD>TC.DASH.008.019 Verify dropdown supports search / type-ahead if implemented <MANUAL>
+
+[Load / Performance]
+    <TBD>TC.DASH.008.020 Verify dropdown opens within 500 ms AND the full clinic switch + dashboard re-render completes within 10 seconds <MANUAL>
+
+[Interoperability / Cross-cutting]
+    <TBD>TC.DASH.008.022 Verify clinic switcher works across Chrome, Firefox, Edge <MANUAL>
+    <TBD>TC.DASH.008.023 Verify the same clinic-scoped URL pattern is used by every nav link after switching <MANUAL>
+
+[Accessibility]
+    <TBD>TC.DASH.008.024 Verify trigger and dropdown items are keyboard navigable (Tab / Arrow / Enter) AND items have accessible names <MANUAL>
+
+[Negative tests]
+    <TBD>TC.DASH.008.026 Verify URL tampering to a clinic id the user does not have access to redirects / shows 403 <MANUAL>
+    <TBD>TC.DASH.008.027 Verify clinic switch while offline shows graceful error <MANUAL>
+
+[Security / Vulnerability]
+    <TBD>TC.DASH.008.028 Verify cross-clinic data isolation AND server-side URL authorisation prevent viewing another clinic's data via URL tampering (clinic id in URL must be server-side authorised; switching does not leak the previous clinic's data) <MANUAL>
+

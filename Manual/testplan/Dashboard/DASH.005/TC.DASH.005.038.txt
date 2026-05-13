@@ -1,0 +1,67 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.DASH.005.038 — "Patient Referrals" widget add behaviour — bug regression for K2 (test.fail: clicking the Library tile silently produces no on-grid widget)
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Add Widget / Widget Library (DASH.005)
+Section     : [Functionality]
+Tags        : <AUTOMATION> <BUG:K2>
+Status      : Active regression — automation marked test.fail() until K2 closes
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  1. Open browser DevTools → Network panel; clear the request log.
+  2. Note the current widget count on the grid (default demo state has
+     6 widgets; if you have fewer, the test still applies — just record
+     the starting count).
+  3. Click "Add Widget" in the top toolbar — the Library sidebar slides
+     in from the right.
+  4. Scroll to the "Patients" category.
+  5. Click the "Patient Referrals" tile.
+  6. Close the Library by clicking the dimmed overlay (or × button if
+     present).
+  7. Inspect the dashboard grid: count rendered widgets again.
+  8. Inspect the Network panel: identify the widget-add request fired
+     by step 5; record its request payload + response status / body.
+  9. Inspect the Console panel: record any JS errors.
+
+[Expected]
+  • Widget count on the grid increases by exactly 1.
+  • A "Patient Referrals" widget appears, showing referral data (or a
+    "no data" empty-state if the clinic has no referrals).
+  • Network: widget-add request returns 2xx and the response includes
+    the new widget's id / metadata.
+  • No JS errors in the console.
+
+[Actual — open bug K2]
+  • Widget count on the grid is unchanged after step 5.
+  • No "Patient Referrals" widget appears anywhere.
+  • No error toast / message is shown to the user.
+  • Network: the widget-add request still fires (and likely returns
+    200 — capture the response for triage).
+  • Console: typically clean — the failure is silent server-side or
+    silently dropped client-side.
+
+[Notes]
+  • Severity per TESTPLAN.md §10.3: Major.
+  • Same failure mode as K3 (Receipts) and K4 (Revenue per Period) —
+    likely a single root cause across the three widgets.
+  • Automation: `tests/dashboard/known-bug-widgets.spec.ts` runs the
+    repro (test.fail). Broader crawler `tests/dashboard/widget-library-coverage.spec.ts`
+    skips this widget via `KNOWN_BROKEN_WIDGETS` so it doesn't
+    pollute the all-26-widgets pass.
+  • Triage value: capture the request payload + response body —
+    the same JSON shape works for the 23 widgets that DO succeed,
+    so a diff between a working and failing response often points
+    straight at the bug.
+
+[Postconfiguration]
+  NA — case does not modify persistent state on success (because no
+  widget is actually added). If the bug is later fixed, remember to
+  remove the resulting widget so the demo dashboard returns to its
+  default 6.

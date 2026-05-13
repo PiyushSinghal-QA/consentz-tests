@@ -1,0 +1,45 @@
+[META]
+    Testname     = MSG.004
+    Longname     = MSG.004 (Correspondence Log)
+    Module       = Messaging
+    Flags        = MSG, P2, LOG, HISTORY, MSG.004
+
+# The historical / log surface that lists every message sent. Used by
+# clinic staff to confirm "did the message actually go?". P2 because the
+# log is a downstream consumer of MSG.001 / MSG.002 / MSG.003 — fixing
+# upstream covers most of the customer pain.
+
+[Default settings]
+    <TBD>TC.MSG.004.001 Verify Correspondence page lists messages with date, recipient, channel, status, subject <AUTOMATION>
+    <TBD>TC.MSG.004.002 Verify pagination / search controls are visible <AUTOMATION>
+
+[Feature configuration]
+    <TBD>TC.MSG.004.003 Verify filter by channel (email / SMS) narrows the list <AUTOMATION>
+    <TBD>TC.MSG.004.004 Verify filter by status (sent / delivered / bounced / failed) narrows the list <AUTOMATION>
+    <TBD>TC.MSG.004.005 Verify filter by date range narrows the list <AUTOMATION>
+    <TBD>TC.MSG.004.006 Verify search by recipient name / email / phone narrows the list <AUTOMATION>
+
+[State persistence / changes handling]
+    <TBD>TC.MSG.004.007 Verify a message sent via MSG.001 appears here within N seconds <AUTOMATION>
+    <TBD>TC.MSG.004.008 Verify a campaign sent via MSG.003 appears here as N rows (one per recipient) <AUTOMATION>
+
+[Logs / Notifications / Audit] NA
+
+[Boundary conditions / Limitations]
+    <TBD>TC.MSG.004.009 Verify Correspondence with 100k+ rows still loads + paginates without lag <MANUAL>
+
+[Functionality]
+    <TBD>TC.MSG.004.010 Verify clicking a row opens the full message body in a side panel / modal <AUTOMATION>
+    <TBD>TC.MSG.004.011 Verify Resend on a failed row re-queues the message <MANUAL>
+
+[Load / Performance]
+    <TBD>TC.MSG.004.012 Verify initial paint < 2 s p95 <AUTOMATION>
+
+[Interoperability / Cross-cutting] NA
+[Accessibility] NA
+
+[Negative tests]
+    <TBD>TC.MSG.004.013 Verify a permanently-failed message is clearly distinguishable from a queued / in-flight one <MANUAL>
+
+[Security / Vulnerability]
+    <TBD>TC.MSG.004.014 Verify cross-clinic IDOR — a user cannot see correspondence from a clinic they do not belong to <MANUAL>

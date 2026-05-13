@@ -1,0 +1,51 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.DASH.005.039 — "Receipts" widget add behaviour — bug regression for K3 (test.fail: clicking the Library tile silently produces no on-grid widget)
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Add Widget / Widget Library (DASH.005)
+Section     : [Functionality]
+Tags        : <AUTOMATION> <BUG:K3>
+Status      : Active regression — automation marked test.fail() until K3 closes
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  1. Open browser DevTools → Network panel; clear the request log.
+  2. Note the current widget count on the grid.
+  3. Click "Add Widget" in the top toolbar — the Library sidebar slides
+     in from the right.
+  4. Scroll to the "Financial" category.
+  5. Click the "Receipts" tile.
+  6. Close the Library by clicking the dimmed overlay.
+  7. Inspect the grid + Network + Console as in K2 (TC.DASH.005.038).
+
+[Expected]
+  • Widget count on the grid increases by exactly 1.
+  • A "Receipts" widget appears with receipts data (or a "no data"
+    empty-state).
+  • Network: widget-add request returns 2xx with new widget metadata.
+  • No JS errors in the console.
+
+[Actual — open bug K3]
+  • Widget count on the grid is unchanged.
+  • No "Receipts" widget appears anywhere.
+  • No error toast / message.
+  • Same silent failure mode as K2 / K4.
+
+[Notes]
+  • Severity per TESTPLAN.md §10.3: Major.
+  • See TC.DASH.005.038 for the full triage approach — capture the
+    failing widget-add request payload + response body and diff
+    against a working widget (e.g. "Net Receipts" in the same
+    category, which DOES add successfully).
+  • Automation: `tests/dashboard/known-bug-widgets.spec.ts`.
+
+[Postconfiguration]
+  NA on bug-present runs (no widget added). Remember to remove the
+  Receipts widget if it's eventually added (after fix) so the demo
+  state stays clean.

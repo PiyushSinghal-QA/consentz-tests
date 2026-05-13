@@ -1,0 +1,50 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.SMOKE.001.038 — Set Up › T&C — /admin/clinics/3/terms-and-conditions/edit
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Per-Page Load Smoke — Super-User Scope (SMOKE.001)
+Section     : [Functionality]
+Tags        : <AUTOMATION> <BUG:K8>
+Status      : Active regression — automation marked test.fail() until K8 closes
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  1. Open browser DevTools → Network and Console panels.
+  2. Navigate to https://staging.consentz.com/admin/clinics/3/terms-and-conditions/edit
+     (or via Set Up → T&C in the side-nav).
+  3. Wait for the page to settle.
+  4. In Network: filter for "ckeditor.js".
+  5. In Console: look for any "CKEDITOR is not defined" errors.
+
+[Expected]
+  • Page returns HTTP 200 and renders the T&C editor.
+  • CKEditor JavaScript loads with HTTP 200.
+  • The rich-text editor toolbar (bold, italic, list, link, etc.) is
+    present and the editor accepts text input.
+
+[Actual — open bug K8]
+  • Page renders the surrounding chrome but the rich-text editor area is
+    broken: the CKEditor JS bundle returns 404:
+      /bundles/fosckeditor/ckeditor.js?v3.0.11
+  • Console shows uncaught reference errors where CKEDITOR.replace is
+    called against a missing global.
+  • User cannot edit T&C content.
+
+[Notes]
+  • Severity per TESTPLAN.md §10.3: Critical (T&C edit completely
+    blocked — affects compliance workflow).
+  • Likely cause: FOS CKEditor bundle not deployed, or path/version
+    mismatch (?v3.0.11 query suggests a pinned version that no longer
+    exists on the asset server).
+  • When K8 is fixed, the page-smokes.spec.ts test.fail() marker for
+    TC.SMOKE.001.038 should be removed AND a follow-up test added that
+    verifies the CKEditor toolbar renders + accepts input.
+
+[Postconfiguration]
+  NA — case does not modify persistent state.

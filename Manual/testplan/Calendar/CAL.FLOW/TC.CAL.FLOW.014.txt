@@ -1,0 +1,25 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.CAL.FLOW.014 — Calendar module endpoint sweep — for every known calendar-scoped URL (/appointments/calendar, /events, and for an existing appointment /appointments/{id}/edit), navigate the browser, assert HTTP status < 400, assert visible content (assertPageLoaded), AND assert the page-noise listener observes no console errors / no 4xx / no 5xx / no UI error flashes. Also exercise interactive permutations on the calendar page: cycle Day → Week → Month view 3 times each direction; navigate Prev / Next at least 6 times forward and 6 times back; open + close (without submitting) the four bottom-right modals — Book Appointment (#new_appointment_form) / Book Meeting / Instant Meeting / Create Event (just-navigates); open + close the in-booking Add Patient sub-modal (#new_patient_form). Each permutation must NOT throw 4xx/5xx and the page must remain interactive.
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Calendar lifecycle — cross-feature integration (CAL.FLOW)
+Section     : [Negative tests]
+Tags        : <TBD> <AUTOMATION>
+Status      : STUB — see [Steps] block below for status of detailed reproduction
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  STUB — to be expanded on first manual execution.
+  Intent: Calendar module endpoint sweep — for every known calendar-scoped URL (/appointments/calendar, /events, and for an existing appointment /appointments/{id}/edit), navigate the browser, assert HTTP status < 400, assert visible content (assertPageLoaded), AND assert the page-noise listener observes no console errors / no 4xx / no 5xx / no UI error flashes. Also exercise interactive permutations on the calendar page: cycle Day → Week → Month view 3 times each direction; navigate Prev / Next at least 6 times forward and 6 times back; open + close (without submitting) the four bottom-right modals — Book Appointment (#new_appointment_form) / Book Meeting / Instant Meeting / Create Event (just-navigates); open + close the in-booking Add Patient sub-modal (#new_patient_form). Each permutation must NOT throw 4xx/5xx and the page must remain interactive.
+
+[Expected]
+  STUB — to be filled in alongside the [Steps] block above.
+
+[Postconfiguration]
+  NA — case does not modify persistent state.

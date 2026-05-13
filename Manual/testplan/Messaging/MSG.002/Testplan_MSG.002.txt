@@ -1,0 +1,53 @@
+[META]
+    Testname     = MSG.002
+    Longname     = MSG.002 (Email Builder)
+    Module       = Messaging
+    Flags        = MSG, P1, BULK, EMAIL, BUILDER, MSG.002
+
+# Authoring surface for the bulk emails sent via Campaign Manager (MSG.003).
+# The CTO's "high variance" framing lives more on the per-record send side
+# (MSG.001) — but the Email Builder feeds those, so a regression here
+# breaks every channel. P1 because the MSG.001 send-icon flow is the
+# customer-facing pain.
+
+[Default settings]
+    <TBD>TC.MSG.002.001 Verify Email Builder page loads with a list of existing system emails <AUTOMATION>
+    <TBD>TC.MSG.002.002 Verify a "New Email" / "New Template" CTA is visible <AUTOMATION>
+
+[Feature configuration]
+    <TBD>TC.MSG.002.003 Verify clicking an existing system email opens it in the editor <AUTOMATION>
+    <TBD>TC.MSG.002.004 Verify the editor exposes Subject AND Body fields <AUTOMATION>
+    <TBD>TC.MSG.002.005 Verify the rich-text / HTML editor loads (likely an iframe — capture which lib for selectors) <MANUAL>
+    <TBD>TC.MSG.002.006 Verify variable insert helpers (e.g. {{firstName}}) populate the body correctly <AUTOMATION>
+    <TBD>TC.MSG.002.007 Verify Save persists the edits AND returns the user to the list <AUTOMATION>
+
+[State persistence / changes handling]
+    <TBD>TC.MSG.002.008 Verify edits persist across page reload <AUTOMATION>
+    <TBD>TC.MSG.002.009 Verify the saved template is referenced correctly by Campaign Manager (MSG.003) <AUTOMATION>
+
+[Logs / Notifications / Audit]
+    <TBD>TC.MSG.002.010 Verify Save surfaces a confirmation toast <AUTOMATION>
+    <TBD>TC.MSG.002.011 Verify NO console errors / 4xx / 5xx on edit + save <AUTOMATION>
+
+[Boundary conditions / Limitations]
+    <TBD>TC.MSG.002.012 Verify Subject line at max length is accepted (or rejected with clear message) <MANUAL>
+    <TBD>TC.MSG.002.013 Verify Body with embedded images / attachments behaves as expected <MANUAL>
+
+[Functionality]
+    <TBD>TC.MSG.002.014 Verify Preview renders the email with sample variable values <AUTOMATION>
+    <TBD>TC.MSG.002.015 Verify Send Test Email lands a test message in the configured test inbox <AUTOMATION> @MAILBOX-DEPENDENCY
+
+[Load / Performance]
+    <TBD>TC.MSG.002.016 Verify editor initialisation is < 2 s p95 <AUTOMATION>
+
+[Interoperability / Cross-cutting] NA
+
+[Accessibility]
+    <TBD>TC.MSG.002.017 Verify the editor is reachable via keyboard <MANUAL>
+
+[Negative tests]
+    <TBD>TC.MSG.002.018 Verify Save with empty Subject / Body surfaces a clear error <AUTOMATION>
+    <TBD>TC.MSG.002.019 Verify malformed HTML in the body is sanitized OR rejected at save <MANUAL>
+
+[Security / Vulnerability]
+    <TBD>TC.MSG.002.020 Verify XSS payload in the body is sanitized on render in the recipient's inbox preview <MANUAL>

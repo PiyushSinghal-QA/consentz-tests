@@ -1,0 +1,56 @@
+[META]
+    Testname     = PAT.FLOW
+    Longname     = PAT.FLOW (Patient lifecycle — cross-feature integration)
+    Module       = Patients
+    Flags        = PAT, P0, FLOW, INTEGRATION, LIFECYCLE, PAT.FLOW
+
+# Cross-feature integration journeys for the Patients module. Each TC
+# walks across multiple Patient sub-features and asserts the integration
+# points hold — bugs that fall between PAT.001 / PAT.002 / PAT.003 / etc.
+# (e.g. patient added but not findable in search, "delete" only soft-
+# archives but the row stays visible) are exactly what these cases
+# catch.
+#
+# Selectors below were captured by `npm run explore:patients-flow`
+# against the live staging tester account on 2026-05-08. See
+# Automation/patients-flow-probe.json for raw markup snapshots.
+#
+# Implementation: tests/patients/patients-flow.spec.ts — a single spec
+# file with `test.describe.serial` (download must run AFTER bulk-add)
+# and an `afterAll` cleanup that deletes every test patient by direct
+# `/patients/{id}/edit` URL (more reliable than search-based cleanup).
+
+[Default settings] NA — flow cases assume preconditions; setup is in [Steps]
+
+[Feature configuration] NA
+
+[State persistence / changes handling] NA
+
+[Logs / Notifications / Audit] NA
+
+[Boundary conditions / Limitations] NA
+
+[Functionality]
+    <TBD>TC.PAT.FLOW.001 Verify navigation to Patients via BOTH the top-bar Patients icon AND the side-bar Patients link: each click lands on /admin/clinics/{id}/patients with the search input (#search_filter_search) visible; navigating back to the dashboard works after each <AUTOMATION>
+    <TBD>TC.PAT.FLOW.002 Verify the Patients list page renders ALL expected chrome elements: search label / textbox (#search_filter_search) / submit-icon button (magnifying-glass SVG, type=submit) inside the search form; "Add Patient" CTA (href ends /patients/new); "Merge Record" link (href ends /patients/merge); Upload icon (href ends /patients/import, title="Upload"); Download icon (#download-patient, href ends /patients/export, title="Download") <AUTOMATION>
+    <TBD>TC.PAT.FLOW.003 Verify Add Patient — POSITIVE path: click Add Patient → fill required fields with marker prefix → click Save → redirected to /patients/{id}/edit → manually navigate back to /patients → search by marker → patient is in the list. Then NEGATIVE path: click Add Patient → fill same required fields → click Cancel → manually navigate back to /patients → search by a fresh marker → patient is NOT in the list <AUTOMATION>
+    <TBD>TC.PAT.FLOW.004 Verify bulk-add flow + duplicate-confirm path: add 10 patients with marker prefix `pwt-{runId}-{i}` and identical phone digits. After the first add, subsequent adds with the same FirstName + LastName + phone trigger the #duplicateData modal ("Patient Duplicate — A Patient with these details exists already…"). Click #duplicate_confirm to proceed. Confirm all 10 markered patients appear in the list (search by `pwt-{runId}` prefix returns 10 rows) <AUTOMATION>
+    <TBD>TC.PAT.FLOW.005 Verify duplicate-close path: trigger the #duplicateData modal (add a patient that conflicts with one of the 10 from FLOW.004) → click "Close" instead of Confirm → manually navigate back to /patients → search by the new patient's marker → the new patient is NOT in the list (NOT saved) <AUTOMATION>
+    <TBD>TC.PAT.FLOW.006 Verify search by Name AND by Telephone, submit via Enter AND via the magnifying-icon button: each search returns at least one expected row from the bulk-added set. Email-search deferred (placeholder for future TC) <AUTOMATION>
+    <TBD>TC.PAT.FLOW.007 Verify Merge Record landing — placeholder. Click "Merge Record" → land on /admin/clinics/{id}/patients/merge. Detail behaviour deferred to a future MERGE sub-plan. <TBD-DEFERRED> <MANUAL>
+    <TBD>TC.PAT.FLOW.008 Verify Upload icon navigates to /admin/clinics/{id}/patients/import AND the page exposes three controls — file picker (#import_csv_file), "Upload CSV" submit button, "Download Template File" link (href ends /csvTemplate). Actual upload behaviour (CSV parsing, error rows, etc.) is a placeholder for a future UPLOAD sub-plan. <AUTOMATION>
+    <TBD>TC.PAT.FLOW.009 Verify Download icon (#download-patient) downloads a CSV; the downloaded file's first column row is exactly: id,status,username,first_name,last_name,birthday,address1,address2,town,state,country,postcode,country_code,phone,country_code_alt,secondary_phone,email,gender,next_kin,next_kin_phone,description,receive_special_offer_sms,receive_special_offer_email,receive_special_offer_push,receive_reminder_sms,receive_reminder_email,receive_reminder_push,gp_address1,gp_address2,gp_town,gp_county,gp_country,gp_post_code,occupation,gp_name,number_nhs,marketing_source,created_at — AND each of the 10 markered patients added in FLOW.004 appears in the file (matched by first_name = `pwt-{runId}-{i}-FN`) <AUTOMATION>
+
+[Load / Performance]
+    <TBD>TC.PAT.FLOW.010 Verify the add-patient cycle does not regress over 10 sequential additions: capture T1 = (first add cycle: load form → submit → confirm-modal-if-any → confirm save) and T2..T10 = subsequent adds. Assert max(T2..T10) < T1 * 2.5 (some warming acceptable; significant slowdown is a bug). Each individual add must complete within 30 s p100 <AUTOMATION>
+
+[Interoperability / Cross-cutting] NA
+
+[Accessibility] NA
+
+[Negative tests]
+    <TBD>TC.PAT.FLOW.011 Verify lifecycle resilience under partial-failure: start the lifecycle journey but kill the network mid-edit; confirm the UI surfaces a clear error AND does NOT leave a half-committed patient record (refresh shows pre-edit values OR a clean failed-save state) <MANUAL>
+    <TBD>TC.PAT.FLOW.014 Verify Patient module endpoint sweep — for every known patient-scoped URL (list, /new, /import, /csvTemplate download, /export download, /merge, /{id}/edit, /{id}/correspondence, /{id}/appointments, /{id}/notes, /{id}/documents, /{id}/correspondence/new) navigate the browser, assert HTTP status < 400, assert a visible content element renders (assertPageLoaded), AND assert the page-noise listener observes no console errors / no 4xx / no 5xx / no UI error flashes. Also exercise search-input permutations on the list page: empty submit, single character, very long (>200 chars), special chars (XSS-shaped <script>, SQL-shaped ', emoji, leading + trailing whitespace), exact phone match. Each permutation must NOT throw 4xx/5xx and the list must re-render without console errors. <AUTOMATION>
+
+[Security / Vulnerability] NA — covered by per-sub-feature security cases
+

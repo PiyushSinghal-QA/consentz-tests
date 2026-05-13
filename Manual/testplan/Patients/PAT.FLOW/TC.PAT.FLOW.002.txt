@@ -1,0 +1,25 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.PAT.FLOW.002 — The Patients list page renders ALL expected chrome elements: search label / textbox (#search_filter_search) / submit-icon button (magnifying-glass SVG, type=submit) inside the search form; "Add Patient" CTA (href ends /patients/new); "Merge Record" link (href ends /patients/merge); Upload icon (href ends /patients/import, title="Upload"); Download icon (#download-patient, href ends /patients/export, title="Download")
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Patient lifecycle — cross-feature integration (PAT.FLOW)
+Section     : [Functionality]
+Tags        : <TBD> <AUTOMATION>
+Status      : STUB — see [Steps] block below for status of detailed reproduction
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  STUB — to be expanded on first manual execution.
+  Intent: The Patients list page renders ALL expected chrome elements: search label / textbox (#search_filter_search) / submit-icon button (magnifying-glass SVG, type=submit) inside the search form; "Add Patient" CTA (href ends /patients/new); "Merge Record" link (href ends /patients/merge); Upload icon (href ends /patients/import, title="Upload"); Download icon (#download-patient, href ends /patients/export, title="Download")
+
+[Expected]
+  STUB — to be filled in alongside the [Steps] block above.
+
+[Postconfiguration]
+  NA — case does not modify persistent state.

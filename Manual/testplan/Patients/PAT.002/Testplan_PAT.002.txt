@@ -1,0 +1,83 @@
+[META]
+    Testname     = PAT.002
+    Longname     = PAT.002 (Add Patient)
+    Module       = Patients
+    Flags        = PAT, P0, CREATE, VALIDATION, PAT.002
+
+# CTO-flagged frequent-breakage area (raised 2026-05-07): "Patients —
+# Adding patients is not working properly." Creation is upstream of every
+# other patient flow (booking, invoicing, consent), so this is a P0
+# regression surface.
+#
+# Failure-mode classes the CTO's framing implies:
+#   • Required fields not actually required (silent allow with empty values)
+#   • Duplicate detection broken (creates duplicates on resubmit / same data)
+#   • POST 200 but record not persisted
+#   • Created but not searchable / not visible until a hard refresh
+#   • Required fields not validated server-side (UI passes, server rejects)
+
+[Default settings]
+    <TBD>TC.PAT.002.001 Verify the Add Patient entry point (button or modal trigger) is visible from the Patients list <AUTOMATION>
+    <TBD>TC.PAT.002.002 Verify clicking it opens an empty form with all required fields visible <AUTOMATION>
+    <TBD>TC.PAT.002.003 Verify required fields are visually marked (asterisk / aria-required) <AUTOMATION>
+    <TBD>TC.PAT.002.004 Verify the form's hidden clinic id matches the current clinic <AUTOMATION>
+
+[Feature configuration]
+    <TBD>TC.PAT.002.005 Verify Title / First / Last name accept text input <AUTOMATION>
+    <TBD>TC.PAT.002.006 Verify DOB picker accepts a valid date <AUTOMATION>
+    <TBD>TC.PAT.002.007 Verify Email field accepts a valid email AND rejects a malformed one <AUTOMATION>
+    <TBD>TC.PAT.002.008 Verify Phone field accepts the configured locale's phone format <AUTOMATION>
+    <TBD>TC.PAT.002.009 Verify Gender / pronoun selector lists the configured options <MANUAL>
+    <TBD>TC.PAT.002.010 Verify Address fields populate correctly when an address-lookup helper is used <MANUAL>
+    <TBD>TC.PAT.002.011 Verify Marketing-consent / GDPR checkboxes default to unchecked <MANUAL>
+
+[State persistence / changes handling]
+    <TBD>TC.PAT.002.012 Verify a successfully-created patient is immediately visible on the Patients list <AUTOMATION>
+    <TBD>TC.PAT.002.013 Verify a successfully-created patient is searchable by First / Last / Email / Phone within N seconds <AUTOMATION>
+    <TBD>TC.PAT.002.014 Verify form state is NOT preserved if the user navigates away mid-create (or is, where intended) <MANUAL>
+    <TBD>TC.PAT.002.015 Verify the patient is scoped to the current clinic only — does NOT appear on a sibling clinic <AUTOMATION>
+
+[Logs / Notifications / Audit]
+    <TBD>TC.PAT.002.016 Verify a success toast surfaces with the new patient's name on creation <AUTOMATION>
+    <TBD>TC.PAT.002.017 Verify the create POST returns 2xx AND no console errors <AUTOMATION>
+    <TBD>TC.PAT.002.018 Verify the create event is recorded in the audit log <MANUAL>
+
+[Boundary conditions / Limitations]
+    <TBD>TC.PAT.002.019 Verify First name length boundary: 1 char accepted; max-length boundary enforced (DB schema) <AUTOMATION>
+    <TBD>TC.PAT.002.020 Verify unicode / accented / apostrophe names accepted (e.g. "Renée", "O'Brien", "李") <AUTOMATION>
+    <TBD>TC.PAT.002.021 Verify international phone (E.164) accepted <AUTOMATION>
+    <TBD>TC.PAT.002.022 Verify DOB at extreme boundaries (1900-01-01, today-1, future-date — should be rejected) <AUTOMATION>
+
+[Functionality]
+    <TBD>TC.PAT.002.023 Verify happy path: fill required fields → submit → success toast → patient on list <AUTOMATION>
+    <TBD>TC.PAT.002.024 Verify Submit is disabled until all required fields are filled <AUTOMATION>
+    <TBD>TC.PAT.002.025 Verify Cancel / X dismisses the form without creating a record <AUTOMATION>
+    <TBD>TC.PAT.002.026 Verify rapid double-click on Submit creates exactly ONE patient (idempotency) <AUTOMATION>
+    <TBD>TC.PAT.002.027 Verify creating a patient with the SAME first / last / DOB as an existing one surfaces a duplicate-warning modal <AUTOMATION>
+    <TBD>TC.PAT.002.028 Verify the user can confirm-create-anyway from the duplicate warning OR cancel <MANUAL>
+
+[Load / Performance]
+    <TBD>TC.PAT.002.029 Verify form-open to first-interactive is < 1 s p95 <AUTOMATION>
+    <TBD>TC.PAT.002.030 Verify Submit-to-success-toast is < 2 s p95 <AUTOMATION>
+
+[Interoperability / Cross-cutting]
+    <TBD>TC.PAT.002.031 Verify the new patient is bookable in the Calendar (CAL.001) immediately after creation <AUTOMATION>
+    <TBD>TC.PAT.002.032 Verify the new patient appears in correspondence / messaging recipient pickers <AUTOMATION>
+
+[Accessibility]
+    <TBD>TC.PAT.002.033 Verify all required fields carry an associated <label> AND aria-required <MANUAL>
+    <TBD>TC.PAT.002.034 Verify form is fully keyboard-operable (Tab / Shift-Tab / Enter / Esc) <MANUAL>
+    <TBD>TC.PAT.002.035 Verify validation error messages are announced to screen readers (aria-live) <MANUAL>
+
+[Negative tests]
+    <TBD>TC.PAT.002.036 Verify submitting with EVERY required field empty surfaces a clear per-field error <AUTOMATION>
+    <TBD>TC.PAT.002.037 Verify submitting with each required field individually empty surfaces a clear error for THAT field <AUTOMATION>
+    <TBD>TC.PAT.002.038 Verify submitting with a malformed email surfaces a clear error AND does not POST <AUTOMATION>
+    <TBD>TC.PAT.002.039 Verify submitting with a malformed phone surfaces a clear error <AUTOMATION>
+    <TBD>TC.PAT.002.040 Verify offline / network failure during submit surfaces a clear retryable error <MANUAL>
+    <TBD>TC.PAT.002.041 Verify server-side rejection (e.g. duplicate email constraint) surfaces a meaningful error to the user <AUTOMATION>
+
+[Security / Vulnerability]
+    <TBD>TC.PAT.002.042 Verify XSS payload in name / notes is escaped on render in the Patients list AND detail <MANUAL>
+    <TBD>TC.PAT.002.043 Verify create POST requires CSRF token <MANUAL>
+    <TBD>TC.PAT.002.044 Verify a user without patient-create permission cannot open the form OR submit successfully (RBAC) <MANUAL>

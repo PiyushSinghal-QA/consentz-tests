@@ -1,0 +1,53 @@
+[META]
+    Testname     = DASH.004
+    Longname     = DASH.004 (Export PDF)
+    Module       = Dashboard
+    Flags        = DASH, P1, EXPORT, PDF, DASH.004
+
+[Default settings]
+    TC.DASH.004.001 Verify Export PDF button is visible by default in the top toolbar <AUTOMATION>
+    TC.DASH.004.002 Verify Export PDF button label is "Export PDF" <AUTOMATION>
+    <TBD>TC.DASH.004.003 Verify tooltip / aria-label on Export PDF button <MANUAL>
+
+[Feature configuration]
+    <TBD>TC.DASH.004.004 Verify clicking Export PDF opens the "Preparing Your Report" popup <AUTOMATION>
+    <TBD>TC.DASH.004.005 Verify popup title reads "Preparing Your Report" <AUTOMATION>
+    <TBD>TC.DASH.004.006 Verify popup body reads "Please wait while we generate your clinic dashboard report..." <AUTOMATION>
+    <TBD>TC.DASH.004.007 Verify popup has a close / cancel control <MANUAL>
+
+[State persistence / changes handling]
+    <TBD>TC.DASH.004.008 Verify Export PDF respects the currently selected Time Period filter AND includes only the currently rendered widgets <MANUAL>
+
+[Logs / Notifications / Audit]
+    <TBD>TC.DASH.004.010 Verify no console errors during PDF generation <MANUAL>
+    <TBD>TC.DASH.004.011 Verify a success toast / "report ready" notification appears on completion <MANUAL>
+
+[Boundary conditions / Limitations]
+    <TBD>TC.DASH.004.012 Verify Export PDF with maximum 6 widgets renders all widgets in PDF <MANUAL>
+    <TBD>TC.DASH.004.013 Verify Export PDF with empty grid (0 widgets) — does it block, error, or render an empty PDF? <MANUAL>
+    <TBD>TC.DASH.004.014 Verify Export PDF with extreme date range (5+ years) <MANUAL>
+
+[Functionality]
+    <TBD>TC.DASH.004.015 Verify the PDF actually downloads (or opens in new tab) within 30 seconds <MANUAL>
+    <TBD>TC.DASH.004.016 Verify PDF filename contains the clinic name and date range <MANUAL>
+    <TBD>TC.DASH.004.017 Verify PDF content matches what's visible on the dashboard (chart values, totals) <MANUAL>
+
+[Load / Performance]
+    <TBD>TC.DASH.004.018 Verify Export PDF completes within 30 seconds on default 6-widget dashboard <MANUAL>
+    <TBD>TC.DASH.004.019 Verify dashboard remains usable while PDF is generating in the background <MANUAL>
+
+[Interoperability / Cross-cutting]
+    <TBD>TC.DASH.004.020 Verify Export PDF works across Chrome, Firefox, Edge AND produces a sensible-looking PDF on tablet / mobile viewports <MANUAL>
+
+[Accessibility]
+    <TBD>TC.DASH.004.022 Verify Export PDF button is keyboard reachable + activatable AND the "Preparing Your Report" popup is announced to screen reader <MANUAL>
+
+[Negative tests]
+    <TBD>TC.DASH.004.024 Verify Export PDF while offline shows graceful error <MANUAL>
+    <TBD>TC.DASH.004.025 Verify Export PDF when server returns 5xx — popup shows error, doesn't hang forever <MANUAL>
+    <TBD>TC.DASH.004.026 Verify cancelling the popup mid-generation aborts the request <MANUAL>
+
+[Security / Vulnerability]
+    <TBD>TC.DASH.004.027 Verify PDF filename does not include sensitive raw data (patient names, ids) <MANUAL>
+    <TBD>TC.DASH.004.028 Verify Export PDF endpoint enforces clinic-scoped authorisation (cannot export another clinic's PDF by URL tampering) <MANUAL>
+

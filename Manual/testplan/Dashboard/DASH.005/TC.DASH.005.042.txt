@@ -1,0 +1,65 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.DASH.005.042 — Re-clicking a Library tile that is already on the dashboard removes the widget from the grid (toggle behaviour); test.fail until K19 fixed — currently shows "Widget already exists" or the 6-cap message instead of removing
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Add Widget / Widget Library (DASH.005)
+Section     : [Functionality]
+Tags        : <AUTOMATION> <BUG:K19>
+Status      : Active regression — automation marked test.fail() until K19 closes
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard with the demo's
+                  default 6 widgets visible.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps — variant A: grid currently has < 6 widgets]
+  1. Remove a widget from the grid (e.g. click the trash on
+     "Cancellations") so 5 widgets remain.
+  2. Open the Widget Library.
+  3. Locate the Library tile for "Reconciliation" (still on the grid).
+  4. Click the Reconciliation tile.
+
+[Steps — variant B: grid is at the 6-widget cap]
+  1. Confirm 6 widgets are on the grid.
+  2. Open the Widget Library.
+  3. Click the Reconciliation tile (or any tile already on the grid).
+
+[Steps — variant C: re-click sequence (first vs subsequent attempts)]
+  1. Repeat variant A or B 3-4 times in the same session, observing
+     the UI on each attempt — variants in error-message text or
+     behaviour between the first and subsequent attempts have been
+     observed.
+
+[Expected]
+  • Clicking a Library tile that is already on the dashboard removes
+    the corresponding widget from the grid (toggle / "click to remove"
+    semantics).
+  • Grid widget count decreases by exactly 1 after the click.
+  • No error toast / blocking message appears.
+
+[Actual — open bug K19]
+  • Variant A: a "Widget already exists" message appears; the widget
+    is NOT removed; grid count unchanged.
+  • Variant B: the 6-widget cap message appears ("You have reached
+    the maximum number of widgets…"); same outcome — widget not
+    removed.
+  • Variant C: behaviour reportedly differs between the first attempt
+    in a session and subsequent attempts (exact difference TBD —
+    capture screenshots / video on triage).
+
+[Notes]
+  • Severity per TESTPLAN.md §10.3: Major.
+  • Closely tied to K18 — without a "selected" indicator on the tile
+    (K18), the user cannot tell they are about to re-click.
+  • Automation: `tests/dashboard/known-bug-misc.spec.ts` runs the
+    variant-A path (Reconciliation, default 6 widgets present), which
+    is the most reliable baseline.
+
+[Postconfiguration]
+  • If variant A removed a widget during steps, restore via Library
+    to return the dashboard to the demo's default 6 (or accept the
+    next test's `dashboard.goto()` to re-fetch from server-saved
+    layout).

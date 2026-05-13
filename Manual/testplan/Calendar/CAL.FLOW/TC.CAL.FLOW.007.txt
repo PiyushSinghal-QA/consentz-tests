@@ -1,0 +1,25 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.CAL.FLOW.007 — Same patient booked at MULTIPLE different times: take 1 of the 5 markered patients → book 3 distinct, non-overlapping appointments for them → all 3 .fc-event blocks render. Then click into the patient detail page (/patients/{id}/appointments) AND verify all 3 appointments are listed.
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Calendar lifecycle — cross-feature integration (CAL.FLOW)
+Section     : [Functionality]
+Tags        : <TBD> <AUTOMATION>
+Status      : STUB — see [Steps] block below for status of detailed reproduction
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  STUB — to be expanded on first manual execution.
+  Intent: Same patient booked at MULTIPLE different times: take 1 of the 5 markered patients → book 3 distinct, non-overlapping appointments for them → all 3 .fc-event blocks render. Then click into the patient detail page (/patients/{id}/appointments) AND verify all 3 appointments are listed.
+
+[Expected]
+  STUB — to be filled in alongside the [Steps] block above.
+
+[Postconfiguration]
+  NA — case does not modify persistent state.

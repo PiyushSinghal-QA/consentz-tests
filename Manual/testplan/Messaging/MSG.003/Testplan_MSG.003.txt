@@ -1,0 +1,55 @@
+[META]
+    Testname     = MSG.003
+    Longname     = MSG.003 (Campaign Manager — bulk send)
+    Module       = Messaging
+    Flags        = MSG, P1, BULK, CAMPAIGN, SCHEDULING, MSG.003
+
+# Bulk-send orchestration on top of MSG.002 templates. The CTO did not
+# call campaigns out specifically, but they ride the same dispatch path
+# as MSG.001 — and a campaign that drops 5,000 emails into the queue is
+# a higher-impact regression than any single send.
+
+[Default settings]
+    <TBD>TC.MSG.003.001 Verify Campaign Manager loads with a list of existing campaigns <AUTOMATION>
+    <TBD>TC.MSG.003.002 Verify a "New Campaign" CTA is visible <AUTOMATION>
+
+[Feature configuration]
+    <TBD>TC.MSG.003.003 Verify the campaign-create flow asks for: name, audience filter, template, schedule <AUTOMATION>
+    <TBD>TC.MSG.003.004 Verify audience filter integrates with the patient List feature (MKT — Lists) <AUTOMATION>
+    <TBD>TC.MSG.003.005 Verify the template picker lists every Email Builder template (MSG.002) <AUTOMATION>
+    <TBD>TC.MSG.003.006 Verify schedule supports immediate send AND scheduled-future send <AUTOMATION>
+
+[State persistence / changes handling]
+    <TBD>TC.MSG.003.007 Verify a saved-draft campaign survives reload <AUTOMATION>
+    <TBD>TC.MSG.003.008 Verify a scheduled campaign moves from "scheduled" to "sent" status when the time arrives <MANUAL>
+
+[Logs / Notifications / Audit]
+    <TBD>TC.MSG.003.009 Verify campaign send surfaces a "X messages queued" confirmation <AUTOMATION>
+    <TBD>TC.MSG.003.010 Verify per-campaign delivery stats (sent, delivered, bounced, opened) are surfaced after send <MANUAL>
+    <TBD>TC.MSG.003.011 Verify each individual recipient's record shows the campaign in their correspondence history <AUTOMATION>
+
+[Boundary conditions / Limitations]
+    <TBD>TC.MSG.003.012 Verify campaigns with 0-recipient audience are blocked at preview, not silently sent to nobody <AUTOMATION>
+    <TBD>TC.MSG.003.013 Verify campaigns with 10k+ recipients queue rather than time out <MANUAL>
+
+[Functionality]
+    <TBD>TC.MSG.003.014 Verify a 1-recipient test campaign actually delivers to the test mailbox <AUTOMATION> @MAILBOX-DEPENDENCY
+    <TBD>TC.MSG.003.015 Verify campaign preview shows the rendered template AND a sample recipient's substituted variables <MANUAL>
+    <TBD>TC.MSG.003.016 Verify pause / cancel of an in-flight campaign halts further sends <MANUAL>
+
+[Load / Performance]
+    <TBD>TC.MSG.003.017 Verify campaign-create-to-first-message-queued is < 5 s p95 <MANUAL>
+
+[Interoperability / Cross-cutting]
+    <TBD>TC.MSG.003.018 Verify recipients with marketing-consent OFF are excluded from the audience <MANUAL>
+    <TBD>TC.MSG.003.019 Verify campaigns sent here appear in MSG.004 Correspondence log <AUTOMATION>
+
+[Accessibility]
+    <TBD>TC.MSG.003.020 Verify the campaign create flow is keyboard-operable end-to-end <MANUAL>
+
+[Negative tests]
+    <TBD>TC.MSG.003.021 Verify scheduling a campaign in the past is rejected with a clear error <AUTOMATION>
+    <TBD>TC.MSG.003.022 Verify a malformed template variable in the body is caught at preview, not at send time <MANUAL>
+
+[Security / Vulnerability]
+    <TBD>TC.MSG.003.023 Verify sending to recipients outside the user's clinic scope is rejected (IDOR) <MANUAL>

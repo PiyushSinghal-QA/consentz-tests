@@ -1,0 +1,54 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.DASH.006.042 — Changing widget Settings shows exactly ONE loading indicator (test.fail until K20 fixed — currently three stacked loading spinners appear at once)
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Widget Grid & Per-Widget Controls (DASH.006)
+Section     : [Feature configuration]
+Tags        : <AUTOMATION> <BUG:K20>
+Status      : Active regression — automation marked test.fail() until K20 closes
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  1. Click the Settings (gear) button on any widget that has a
+     Settings panel (e.g. "Reconciliation"). The Settings panel /
+     modal opens.
+  2. Change the Time Period dropdown (#settings-timeframe) to a
+     non-default value (e.g. "This Week").
+  3. Click "Apply Settings" (#apply-settings).
+  4. Within ~150ms of the click, count the number of loading
+     indicators (spinners, progress bars, "Loading…" overlays) that
+     are visible at that moment.
+
+[Expected]
+  • Exactly ONE loading indicator is visible while the widget
+    refreshes its data after the settings change.
+  • After data arrives, the indicator disappears and the chart
+    updates.
+
+[Actual — open bug K20]
+  • THREE stacked / concurrent loading indicators appear at once
+    immediately after Apply Settings.
+  • Suggests three independent re-render triggers (e.g. settings
+    save + widget refresh + chart re-init) each painting their own
+    loader rather than a single coordinated loading state.
+
+[Notes]
+  • Severity per TESTPLAN.md §10.3: Minor (visual / UX issue, not
+    blocking).
+  • Automation: `tests/dashboard/known-bug-misc.spec.ts` counts
+    visible elements matching a broad spinner selector
+    (`.spinner-border, .spinner, .fa-spin, .loading, [class*="spinner"],
+    [class*="loader"], [role="status"]`). If Consentz uses a
+    different marker not in this list, the selector should be
+    tightened once the actual markup is confirmed.
+
+[Postconfiguration]
+  • Restore the widget's Time Period to the global default if it
+    persists across reload (DASH.006.006 covers this persistence
+    behaviour).

@@ -1,0 +1,40 @@
+[META]
+    Testname     = MSG.005
+    Longname     = MSG.005 (Settings → Messaging / Reminders)
+    Module       = Messaging
+    Flags        = MSG, P2, REMINDERS, AUTOMATED, SETTINGS, MSG.005
+
+# The configuration surface for automated reminders (appointment
+# confirmations, recall notices, etc.). P2 because reminders are
+# scheduled — the dispatch path IS still MSG.001-style under the hood,
+# so fixing per-record covers most regressions. This plan exists for
+# coverage of the configuration UI specifically.
+
+[Default settings]
+    <TBD>TC.MSG.005.001 Verify Settings → Messaging page lists every configurable reminder type <AUTOMATION>
+    <TBD>TC.MSG.005.002 Verify each reminder shows: enabled state, channel, lead-time, template <AUTOMATION>
+
+[Feature configuration]
+    <TBD>TC.MSG.005.003 Verify each reminder can be enabled / disabled via toggle <AUTOMATION>
+    <TBD>TC.MSG.005.004 Verify changing the lead-time persists across reload <AUTOMATION>
+    <TBD>TC.MSG.005.005 Verify changing the template persists across reload AND the new template is what fires next <AUTOMATION>
+
+[State persistence / changes handling] NA
+
+[Logs / Notifications / Audit]
+    <TBD>TC.MSG.005.006 Verify Save surfaces a confirmation toast <AUTOMATION>
+    <TBD>TC.MSG.005.007 Verify a reminder fired at the configured lead-time lands in MSG.004 Correspondence <MANUAL>
+
+[Boundary conditions / Limitations]
+    <TBD>TC.MSG.005.008 Verify lead-time at 0 minutes / 0 days is accepted OR rejected with a clear error <MANUAL>
+    <TBD>TC.MSG.005.009 Verify lead-time at extreme upper bound (e.g. 30 days) is accepted <MANUAL>
+
+[Functionality] NA
+[Load / Performance] NA
+[Interoperability / Cross-cutting]
+    <TBD>TC.MSG.005.010 Verify booking an appointment in CAL.001 with the appointment-reminder enabled actually triggers a reminder at the configured lead-time <MANUAL>
+
+[Accessibility] NA
+[Negative tests] NA
+[Security / Vulnerability]
+    <TBD>TC.MSG.005.011 Verify a user without messaging-config permission cannot reach OR mutate this page <MANUAL>

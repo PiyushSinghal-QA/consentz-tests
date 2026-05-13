@@ -1,0 +1,91 @@
+[META]
+    Testname     = CAL.001
+    Longname     = CAL.001 (Book Appointment)
+    Module       = Calendar
+    Flags        = CAL, P0, BOOKING, DOUBLE-BOOKING, TIMEZONE, EMAIL, CAL.001
+
+# CTO-flagged frequent-breakage area (raised 2026-05-07): Book Appointment
+# is the highest-business-risk surface in the suite — a wrong-time booking
+# means the customer shows up without a practitioner and the clinic loses
+# trust. Failure classes called out by the CTO:
+#   • Double bookings (same slot booked twice — race condition or missing
+#     server-side slot lock)
+#   • Wrong-time bookings (timezone / DST / drag-resize / click-to-time bug)
+#   • Confirmation emails not received (SMTP / queue / template / recipient
+#     resolution failure)
+
+[Default settings]
+    TC.CAL.001.001 Verify Calendar page loads with current week visible AND today highlighted <AUTOMATION>
+    TC.CAL.001.002 Verify a "Book Appointment" / "New Appointment" entry point is visible on first load <AUTOMATION>
+    TC.CAL.001.003 Verify clicking the Book Appointment trigger opens the booking modal with "Create Appointment" title <AUTOMATION>
+    TC.CAL.001.004 Verify the booking form lists the expected fields (patient, practitioner, room, treatment, date, start, end, notes) <AUTOMATION>
+    TC.CAL.001.005 Verify in-form patient search input is reachable AND carries the "Select Patient" placeholder <AUTOMATION>
+
+[Feature configuration]
+    <TBD>TC.CAL.001.006 Verify patient search inside the booking form returns matches as user types <AUTOMATION>
+    <TBD>TC.CAL.001.007 Verify selecting a patient from the typeahead populates the booking form <AUTOMATION>
+    <TBD>TC.CAL.001.008 Verify practitioner dropdown lists every practitioner configured for the clinic <AUTOMATION>
+    <TBD>TC.CAL.001.009 Verify treatment dropdown lists every treatment configured for the clinic <AUTOMATION>
+    <TBD>TC.CAL.001.010 Verify room dropdown is populated AND filters to rooms matching the chosen treatment / practitioner where applicable <MANUAL>
+    <TBD>TC.CAL.001.011 Verify start time + end time + duration interlock — changing one updates the other consistently <AUTOMATION>
+    <TBD>TC.CAL.001.012 Verify the form's hidden clinic id matches the clinic switcher's current selection <AUTOMATION>
+
+[State persistence / changes handling]
+    <TBD>TC.CAL.001.013 Verify a booked appointment persists across page reload AND appears at the same wall-clock time <AUTOMATION>
+    <TBD>TC.CAL.001.014 Verify a booked appointment is visible to the same user after logout / login <MANUAL>
+    <TBD>TC.CAL.001.015 Verify a booking made on clinic A does not appear on clinic B's calendar <AUTOMATION>
+    <TBD>TC.CAL.001.016 Verify two browser tabs viewing the same calendar both reflect a booking made in either tab within N seconds <MANUAL>
+
+[Logs / Notifications / Audit]
+    <TBD>TC.CAL.001.017 Verify successful booking surfaces a confirmation toast with the booked time + patient name <AUTOMATION>
+    <TBD>TC.CAL.001.018 Verify booking POST returns 2xx AND no console errors fire on success <AUTOMATION>
+    <TBD>TC.CAL.001.019 Verify confirmation email arrives at the patient's address within N seconds of booking <AUTOMATION> @BUG-CANDIDATE
+    <TBD>TC.CAL.001.020 Verify confirmation email body shows the correct date + time + clinic + practitioner + treatment <AUTOMATION>
+    <TBD>TC.CAL.001.021 Verify the booking is recorded in the audit log (Logs → Appointments) with the booking user's id <MANUAL>
+
+[Boundary conditions / Limitations]
+    <TBD>TC.CAL.001.022 Verify booking at exactly 00:00:00 (midnight start of day) succeeds AND renders at the correct slot <AUTOMATION>
+    <TBD>TC.CAL.001.023 Verify booking at 23:59 with duration extending to next day is either rejected or split correctly <MANUAL>
+    <TBD>TC.CAL.001.024 Verify booking on the day of a DST transition (spring-forward AND autumn-back) lands at the intended local wall-clock time <AUTOMATION>
+    <TBD>TC.CAL.001.025 Verify booking at the calendar's farthest-future supported date succeeds <MANUAL>
+    <TBD>TC.CAL.001.026 Verify minimum-duration booking (e.g. 5 min) is accepted OR rejected with a clear error <MANUAL>
+    <TBD>TC.CAL.001.027 Verify maximum-duration booking (e.g. 8 h) is accepted OR rejected with a clear error <MANUAL>
+
+[Functionality]
+    <TBD>TC.CAL.001.028 Verify happy-path booking: pick slot → fill form → submit → appointment block appears on grid <AUTOMATION>
+    <TBD>TC.CAL.001.029 Verify the appointment block on the grid carries the patient name, treatment, AND start-end labels <AUTOMATION>
+    <TBD>TC.CAL.001.030 Verify clicking a booked appointment opens its detail / edit panel <AUTOMATION>
+    <TBD>TC.CAL.001.031 Verify drag-resize on the appointment block updates start / end consistently AND persists <AUTOMATION>
+    <TBD>TC.CAL.001.032 Verify drag-move to a different time slot updates the booking AND persists <AUTOMATION>
+    <TBD>TC.CAL.001.033 Verify cancel from the appointment detail removes it from the grid AND clears the slot <AUTOMATION>
+    <TBD>TC.CAL.001.034 Verify rapid double-click on Submit creates exactly ONE appointment (idempotency / submit guard) <AUTOMATION>
+    <TBD>TC.CAL.001.035 Verify two concurrent users submitting for the same slot result in exactly ONE successful booking AND one clear error <AUTOMATION> @BUG-CANDIDATE
+
+[Load / Performance]
+    <TBD>TC.CAL.001.036 Verify time from clicking an empty slot to the form being interactive is < 1 s <AUTOMATION>
+    <TBD>TC.CAL.001.037 Verify in-form patient typeahead returns first match within 500 ms p95 <AUTOMATION>
+    <TBD>TC.CAL.001.038 Verify booking submit-to-confirmation toast is < 2 s p95 <AUTOMATION>
+    <TBD>TC.CAL.001.039 Verify calendar with 500+ existing appointments still loads + scrolls without dropping frames <MANUAL>
+
+[Interoperability / Cross-cutting]
+    <TBD>TC.CAL.001.040 Verify booking flow works in Chrome, Firefox, Edge AND on tablet 768-1024 px AND mobile <768 px <MANUAL>
+    <TBD>TC.CAL.001.041 Verify a booking made via the Calendar appears in the Patient detail's appointment list <AUTOMATION>
+    <TBD>TC.CAL.001.042 Verify a booking made via the Calendar appears in Logs → Appointments <AUTOMATION>
+    <TBD>TC.CAL.001.043 Verify slots blocked via Logs → Blockers are NOT bookable from the Calendar <MANUAL>
+
+[Accessibility]
+    <TBD>TC.CAL.001.044 Verify booking form is keyboard-navigable (Tab through fields, Enter submits, Esc cancels) <MANUAL>
+    <TBD>TC.CAL.001.045 Verify form fields carry ARIA labels readable by NVDA / VoiceOver <MANUAL>
+    <TBD>TC.CAL.001.046 Verify colour contrast on appointment blocks meets WCAG AA <MANUAL>
+
+[Negative tests]
+    <TBD>TC.CAL.001.047 Verify submitting with no patient selected surfaces a clear error AND does NOT create a booking <AUTOMATION>
+    <TBD>TC.CAL.001.048 Verify submitting with End < Start surfaces a clear error <AUTOMATION>
+    <TBD>TC.CAL.001.049 Verify submitting for a slot already booked by another practitioner+room combo surfaces a clear conflict error <AUTOMATION>
+    <TBD>TC.CAL.001.050 Verify submitting while offline surfaces a clear error AND does not create a partial booking <MANUAL>
+    <TBD>TC.CAL.001.051 Verify a booking attempt by a user without booking permission is rejected at the server (RBAC) <MANUAL>
+
+[Security / Vulnerability]
+    <TBD>TC.CAL.001.052 Verify XSS payload in the Notes field is escaped on render <MANUAL>
+    <TBD>TC.CAL.001.053 Verify forging a booking POST for a clinic the user does not belong to is rejected (IDOR) <MANUAL>
+    <TBD>TC.CAL.001.054 Verify booking endpoint requires CSRF token <MANUAL>

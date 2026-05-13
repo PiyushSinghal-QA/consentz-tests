@@ -1,0 +1,48 @@
+[META]
+    Testname     = DASH.003
+    Longname     = DASH.003 (Refresh Button)
+    Module       = Dashboard
+    Flags        = DASH, P0, REFRESH, DASH.003
+
+[Default settings]
+    TC.DASH.003.001 Verify Refresh button is visible by default in the top toolbar <AUTOMATION>
+    TC.DASH.003.002 Verify Refresh button label is "Refresh" <AUTOMATION>
+    <TBD>TC.DASH.003.003 Verify tooltip / aria-label on Refresh button <MANUAL>
+
+[Feature configuration]
+    TC.DASH.003.004 Verify clicking Refresh keeps the user on the dashboard URL <AUTOMATION>
+    <TBD>TC.DASH.003.005 Verify clicking Refresh re-fetches widget data (network XHRs to widget endpoints fire) <AUTOMATION>
+    TC.DASH.003.006 Verify "Last updated:" timestamp advances after Refresh is clicked <AUTOMATION>
+
+[State persistence / changes handling]
+    TC.DASH.003.007 Verify Refresh preserves the currently selected Time Period filter <AUTOMATION>
+    TC.DASH.003.008 Verify Refresh preserves the current widget layout (no widgets added or removed) <AUTOMATION>
+
+[Logs / Notifications / Audit]
+    TC.DASH.003.009 Verify no console errors AND no 4xx / 5xx XHRs after Refresh <AUTOMATION>
+    <TBD>TC.DASH.003.011 Verify Refresh button shows a transient loading state (spinner / disabled) while data loads <MANUAL>
+
+[Boundary conditions / Limitations]
+    <TBD>TC.DASH.003.012 Verify rapid double-click on Refresh does not trigger duplicate XHRs <MANUAL>
+    <TBD>TC.DASH.003.013 Verify Refresh after a long idle session (e.g. 30 min) still works <MANUAL>
+
+[Functionality]
+    <TBD>TC.DASH.003.014 Verify all rendered widgets re-render with fresh data after Refresh <MANUAL>
+    <TBD>TC.DASH.003.015 Verify Refresh keyboard shortcut (Enter when focused on button) works <MANUAL>
+
+[Load / Performance]
+    <TBD>TC.DASH.003.016 Verify Refresh completes within 5 seconds on default 6-widget dashboard <MANUAL>
+
+[Interoperability / Cross-cutting]
+    <TBD>TC.DASH.003.017 Verify Refresh behaves consistently across Chrome, Firefox, Edge <MANUAL>
+
+[Accessibility]
+    <TBD>TC.DASH.003.018 Verify Refresh button is keyboard reachable + activatable (Tab + Enter) AND its loading state is announced to screen reader (aria-busy / aria-live) <MANUAL>
+
+[Negative tests]
+    <TBD>TC.DASH.003.020 Verify Refresh while offline shows a graceful error (no infinite spinner) <MANUAL>
+    <TBD>TC.DASH.003.021 Verify Refresh during an in-flight Apply (date filter) is handled cleanly <MANUAL>
+
+[Security / Vulnerability]
+    NA
+

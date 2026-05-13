@@ -1,0 +1,49 @@
+[META]
+    Testname     = PAT.001
+    Longname     = PAT.001 (Patients List Page)
+    Module       = Patients
+    Flags        = PAT, P1, LIST, PAGINATION, PAT.001
+
+# Sister sub-feature to PAT.002 (Add Patient — CTO-flagged) and PAT.003
+# (Patient Search — CTO-flagged). Covers the listing surface itself:
+# columns, pagination, sort, bulk actions. Cross-feature integration
+# (add → list → search → edit → delete) lives in PAT.FLOW.001.
+
+[Default settings]
+    TC.PAT.001.001 Verify Patients list page renders with the expected chrome: at least one patient row visible, columns include Patient/Telephone/Email/Status, an Add Patient CTA pointing at /admin/clinics/{id}/patients/new, and a search input (#search_filter_search) <AUTOMATION>
+
+[Feature configuration]
+    <TBD>TC.PAT.001.005 Verify clicking a column header sorts the list ascending; second click sorts descending <AUTOMATION>
+    TC.PAT.001.006 Verify pagination control is visible AND exposes multiple page-link anchors <AUTOMATION>
+    <TBD>TC.PAT.001.007 Verify changing page size (if available) re-fetches the list correctly <MANUAL>
+    TC.PAT.001.008 Verify clicking a patient row navigates to /admin/clinics/{id}/patients/{patientId}/edit <AUTOMATION>
+
+[State persistence / changes handling]
+    <TBD>TC.PAT.001.009 Verify last-applied filter / sort persists across page reload (where intended) <MANUAL>
+    <TBD>TC.PAT.001.010 Verify list is scoped to the current clinic — switching clinics shows that clinic's patients only <AUTOMATION>
+
+[Logs / Notifications / Audit]
+    TC.PAT.001.011 Verify no console errors / 4xx / 5xx / UI-error flashes on initial list load <AUTOMATION>
+
+[Boundary conditions / Limitations]
+    <TBD>TC.PAT.001.012 Verify list renders cleanly when there are 0 patients (clean empty state) <MANUAL>
+    <TBD>TC.PAT.001.013 Verify list pagination works at the last page (partial page) <MANUAL>
+    <TBD>TC.PAT.001.014 Verify list with 10k+ patients still loads + scrolls without noticeable lag <MANUAL>
+
+[Functionality]
+    NA — newly-added / deleted / edited patients appearing/disappearing in the list are covered by PAT.FLOW.001 (lifecycle integration); covering them as separate cases here would duplicate that journey.
+
+[Load / Performance]
+    <TBD>TC.PAT.001.017 Verify initial list paint is < 2 s p95 on a clinic with 1k patients <AUTOMATION>
+
+[Interoperability / Cross-cutting] NA
+
+[Accessibility]
+    <TBD>TC.PAT.001.018 Verify table is announced as a data table to screen readers <MANUAL>
+    <TBD>TC.PAT.001.019 Verify column headers are reachable via Tab AND actionable via Enter (sort) <MANUAL>
+
+[Negative tests]
+    <TBD>TC.PAT.001.020 Verify navigating directly to a non-existent patient id returns a 4xx / not-found page (not blank) <AUTOMATION>
+
+[Security / Vulnerability]
+    <TBD>TC.PAT.001.021 Verify a user without patient-read permission cannot reach this URL (RBAC) <MANUAL>

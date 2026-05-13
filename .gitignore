@@ -1,0 +1,12 @@
+Automation/node_modules/
+Automation/playwright-report/
+Automation/test-results/
+Automation/playwright/.auth/
+Automation/.env
+Automation/*.log
+Automation/allure-results/
+Automation/allure-report/
+
+# Dashboard data is regenerated on every run; only commit the static
+# assets, not the test-result snapshots.
+dashboard/data/

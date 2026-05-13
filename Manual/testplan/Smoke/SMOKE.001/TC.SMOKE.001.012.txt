@@ -1,0 +1,42 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.SMOKE.001.012 — Marketing › Template Library — /admin/clinics/3/templates
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Per-Page Load Smoke — Super-User Scope (SMOKE.001)
+Section     : [Functionality]
+Tags        : <AUTOMATION> <BUG:K5>
+Status      : Active regression — automation marked test.fail() until K5 closes
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  1. Open browser DevTools → Network panel; clear the request log.
+  2. Navigate to https://staging.consentz.com/admin/clinics/3/templates
+     (or via Marketing → Template Library in the side-nav).
+  3. Wait for the page to settle (network idle).
+  4. Filter the Network panel for "default-image".
+
+[Expected]
+  • Page returns HTTP 200 and renders the template gallery.
+  • All thumbnail images load with HTTP 200.
+
+[Actual — open bug K5]
+  • Page renders, but three thumbnail asset requests return HTTP 404:
+      /library/61/image/default-image3.png
+      /library/61/image/default-image4.png
+      /library/61/image/default-image5.png
+  • Affected template tiles render with broken-image placeholders.
+
+[Notes]
+  • Severity per TESTPLAN.md §10.3: Major (visual default thumbnails missing).
+  • Likely cause: missing seed assets in the staging media bucket.
+  • When K5 is fixed, the page-smokes.spec.ts test.fail() marker for
+    TC.SMOKE.001.012 should be removed.
+
+[Postconfiguration]
+  NA — case does not modify persistent state.

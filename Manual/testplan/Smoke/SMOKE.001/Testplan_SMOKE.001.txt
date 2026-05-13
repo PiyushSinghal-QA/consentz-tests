@@ -1,0 +1,133 @@
+[META]
+    Testname     = SMOKE.001
+    Longname     = SMOKE.001 (Per-Page Load Smoke — Super-User Scope)
+    Module       = Smoke (cross-cutting)
+    Flags        = SMOKE, P0, BREADTH, REGRESSION
+
+# Each TC.SMOKE.001.NNN below verifies one page reachable from the
+# super-user side navigation. The criterion is the standard
+# `assertPageLoaded(url, content)` check — the URL matches the expected
+# pattern AND a visible content element is rendered (so blank-body bugs
+# like K1 are caught even when the URL itself is correct), plus no
+# console errors and no 4xx / 5xx XHRs (excluding the noise helper's
+# default ignores for third-party trackers).
+#
+# Source of truth for the page list: nav-tree.json (captured by
+# tests/explore-nav.spec.ts). The numbering below MUST match the
+# auto-numbering produced by tests/page-smokes.spec.ts — that order is
+# the order tiles appear in nav-tree.json (top-level, then each parent
+# module's children, then any trailing direct items like Help).
+#
+# Tag convention on each line:
+#   <AUTOMATION>     Driven by tests/page-smokes.spec.ts
+#   <BUG:K?>         Expected-to-fail regression — K-bug from TESTPLAN.md §10.3
+#                    (the spec marks these with `test.fail()` so the suite
+#                     stays green while the regression stays visible)
+
+[Default settings]
+    NA
+
+[Feature configuration]
+    NA
+
+[State persistence / changes handling]
+    NA
+
+[Logs / Notifications / Audit]
+    NA
+
+[Boundary conditions / Limitations]
+    NA
+
+[Functionality]
+    # ── Direct top-level (4)
+    TC.SMOKE.001.001 Top › Dashboard — /admin/clinics/3/dashboard <AUTOMATION>
+    TC.SMOKE.001.002 Top › Calendar — /admin/clinics/3/appointments/calendar <AUTOMATION>
+    TC.SMOKE.001.003 Top › Patients — /admin/clinics/3/patients <AUTOMATION>
+    TC.SMOKE.001.004 Top › Website — /admin/website/3 <AUTOMATION>
+
+    # ── Marketing (11)
+    TC.SMOKE.001.005 Marketing › Prospects — /admin/clinics/3/lead-capture <AUTOMATION>
+    TC.SMOKE.001.006 Marketing › Custom Form Data — /admin/customformdata/3 <AUTOMATION>
+    TC.SMOKE.001.007 Marketing › Event Form Data — /admin/eventformdata/3 <AUTOMATION>
+    TC.SMOKE.001.008 Marketing › Waiting List — /admin/clinics/3/waiting-list <AUTOMATION>
+    TC.SMOKE.001.009 Marketing › Correspondence — /admin/clinics/3/correspondence <AUTOMATION>
+    TC.SMOKE.001.010 Marketing › Campaign Manager — /admin/clinics/3/campaign <AUTOMATION>
+    TC.SMOKE.001.011 Marketing › Email Builder — /admin/clinics/3/systemEmails <AUTOMATION>
+    TC.SMOKE.001.012 Marketing › Template Library — /admin/clinics/3/templates <AUTOMATION> <BUG:K5>
+    TC.SMOKE.001.013 Marketing › Pipeline — /admin/clinics/3/lead-capture-pipeline/ <AUTOMATION>
+    TC.SMOKE.001.014 Marketing › Lists — /admin/clinics/3/filter <AUTOMATION>
+    TC.SMOKE.001.015 Marketing › Ads — /admin/clinics/3/ads <AUTOMATION> <BUG:K6>
+
+    # ── Stock Control (4)
+    TC.SMOKE.001.016 Stock Control › Stock — /admin/clinics/3/stock/ <AUTOMATION>
+    TC.SMOKE.001.017 Stock Control › Batch — /admin/clinics/3/batch <AUTOMATION>
+    TC.SMOKE.001.018 Stock Control › Goods Received — /admin/clinics/3/goodsReceived/ <AUTOMATION>
+    TC.SMOKE.001.019 Stock Control › Prescriptions — /admin/clinics/3/prescriptions <AUTOMATION>
+
+    # ── Business (7)
+    TC.SMOKE.001.020 Business › Invoices — /admin/clinics/3/invoices <AUTOMATION>
+    TC.SMOKE.001.021 Business › Prepayments — /admin/clinics/3/invoices/prepay <AUTOMATION>
+    TC.SMOKE.001.022 Business › Quotes — /admin/clinics/3/invoices/quotes <AUTOMATION>
+    TC.SMOKE.001.023 Business › Credit Notes — /admin/clinics/3/invoices/credit <AUTOMATION>
+    TC.SMOKE.001.024 Business › PS Payments — /admin/clinics/3/paymentsense/log/payments <AUTOMATION>
+    TC.SMOKE.001.025 Business › PS Prepays — /admin/clinics/3/paymentsense/log/prepays <AUTOMATION>
+    TC.SMOKE.001.026 Business › PS Refunds — /admin/clinics/3/paymentsense/log/refunds <AUTOMATION>
+
+    # ── Report (3)
+    TC.SMOKE.001.027 Report › General Reports — /admin/clinics/3/report <AUTOMATION>
+    TC.SMOKE.001.028 Report › Custom Reports — /admin/clinics/3/custom-reports/ <AUTOMATION> <BUG:K7>
+    TC.SMOKE.001.029 Report › CQC Reports — /admin/clinics/3/cqc-reports/ <AUTOMATION>
+
+    # ── Set Up (12)
+    TC.SMOKE.001.030 Set Up › Team — /admin/clinics/3/users <AUTOMATION>
+    TC.SMOKE.001.031 Set Up › Products — /admin/clinics/3/product/ <AUTOMATION>
+    TC.SMOKE.001.032 Set Up › Treatments — /admin/clinics/3/treatment/ <AUTOMATION>
+    TC.SMOKE.001.033 Set Up › Forms — /admin/clinics/3/forms <AUTOMATION>
+    TC.SMOKE.001.034 Set Up › Questionnaires — /admin/clinics/3/questionnaire <AUTOMATION>
+    TC.SMOKE.001.035 Set Up › Price List — /admin/clinics/3/priceList/ <AUTOMATION>
+    TC.SMOKE.001.036 Set Up › Prepay Packages — /admin/clinics/3/package <AUTOMATION>
+    TC.SMOKE.001.037 Set Up › Media — /admin/clinics/3/marketing <AUTOMATION>
+    TC.SMOKE.001.038 Set Up › T&C — /admin/clinics/3/terms-and-conditions/edit <AUTOMATION> <BUG:K8>
+    TC.SMOKE.001.039 Set Up › Rooms & Equipment — /admin/clinics/3/room <AUTOMATION>
+    TC.SMOKE.001.040 Set Up › Membership Plans — /admin/clinics/3/membership <AUTOMATION>
+    TC.SMOKE.001.041 Set Up › Additional List Options — /admin/clinics/3/appointment-codes/ <AUTOMATION>
+
+    # ── Settings (7)
+    TC.SMOKE.001.042 Settings › Super Admin — /admin/organisations/3/users <AUTOMATION>
+    TC.SMOKE.001.043 Settings › Clinics — /admin/organisations/3/clinics <AUTOMATION>
+    TC.SMOKE.001.044 Settings › Profile — /admin/clinics/3/edit <AUTOMATION>
+    TC.SMOKE.001.045 Settings › Licences — /admin/clinics/3/license <AUTOMATION>
+    TC.SMOKE.001.046 Settings › Import Data — /admin/clinics/3/dataImport <AUTOMATION>
+    TC.SMOKE.001.047 Settings › Online Booking — /admin/widget/settings/3 <AUTOMATION>
+    TC.SMOKE.001.048 Settings › Messaging — /admin/clinics/3/reminders <AUTOMATION>
+
+    # ── Logs (10)
+    TC.SMOKE.001.049 Logs › Appointments — /admin/clinics/3/appointments <AUTOMATION>
+    TC.SMOKE.001.050 Logs › Blockers — /admin/clinics/3/blockers <AUTOMATION> <BUG:K1>
+    TC.SMOKE.001.051 Logs › Appointment Archive — /admin/clinics/3/appointments/archive <AUTOMATION>
+    TC.SMOKE.001.052 Logs › Prospects Archive — /admin/clinics/3/lead-capture/archive <AUTOMATION>
+    TC.SMOKE.001.053 Logs › Invoice Archive — /admin/clinics/3/invoices/archive <AUTOMATION>
+    TC.SMOKE.001.054 Logs › Prepay Archive — /admin/clinics/3/invoices/prepay/archive <AUTOMATION>
+    TC.SMOKE.001.055 Logs › Credit Notes Archive — /admin/clinics/3/invoices/credit/archive <AUTOMATION>
+    TC.SMOKE.001.056 Logs › Stock History Archive — /admin/clinics/3/stock/history/archive <AUTOMATION>
+    TC.SMOKE.001.057 Logs › Batch Archive — /admin/clinics/3/batch/archive <AUTOMATION>
+    TC.SMOKE.001.058 Logs › Archive Consentz Forms — /admin/clinics/3/batch/forms/archived <AUTOMATION>
+
+    # ── Direct top-level trailing (1)
+    TC.SMOKE.001.059 Top › Help — /admin/help/3 <AUTOMATION>
+
+[Load / Performance]
+    NA
+
+[Interoperability / Cross-cutting]
+    NA
+
+[Accessibility]
+    NA
+
+[Negative tests]
+    NA
+
+[Security / Vulnerability]
+    NA

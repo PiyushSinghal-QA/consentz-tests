@@ -1,0 +1,89 @@
+[META]
+    Testname     = MSG.001
+    Longname     = MSG.001 (Per-record Send Icons — Patients / Prospects / Clinics)
+    Module       = Messaging
+    Flags        = MSG, P0, ICONS, IN-RECORD, EMAIL, SMS, MSG.001
+
+# CTO-flagged frequent-breakage area (raised 2026-05-07): "Sending
+# messages/emails are inconsistent — High variance — All buttons and all,
+# especially the icons on chat messaging labels (Patients / Prospects /
+# Clinics)."
+#
+# This sub-feature covers the small per-record send icons that appear on
+# Patient detail, Prospect detail, and Clinic context bars (the icon row
+# next to a record that triggers email / SMS / chat send).
+#
+# Failure-mode classes the CTO's framing implies:
+#   • Icon click handler intermittently does not fire (race with widget
+#     init / jQuery plugin not yet bound)
+#   • Toast says "Sent" but message never dispatches (need DELIVERY
+#     verification, not UI verification alone)
+#   • Recipient-resolution wrong (e.g. sends to the test address even after
+#     swap)
+#   • Template variable rendering breaks (e.g. {{firstName}} renders empty)
+#
+# Because send-icon selectors will be hairy (icon-only buttons, often
+# unlabeled), an early concrete deliverable is to push the dev team for
+# data-testid attributes OR aria-labels on each send icon.
+
+[Default settings]
+    <TBD>TC.MSG.001.001 Verify Patient detail page exposes a visible Send Email icon AND Send SMS icon (and any other channels) <AUTOMATION>
+    <TBD>TC.MSG.001.002 Verify Prospect detail page exposes the same per-record send icons <AUTOMATION>
+    <TBD>TC.MSG.001.003 Verify each icon has either an aria-label OR a data-testid usable for stable selection <AUTOMATION> @SELECTOR-DEBT
+    <TBD>TC.MSG.001.004 Verify hover on each icon reveals a tooltip naming the channel <MANUAL>
+
+[Feature configuration]
+    <TBD>TC.MSG.001.005 Verify clicking the Email icon opens a compose modal with the patient's email address pre-filled <AUTOMATION>
+    <TBD>TC.MSG.001.006 Verify clicking the SMS icon opens a compose modal with the patient's phone number pre-filled <AUTOMATION>
+    <TBD>TC.MSG.001.007 Verify the compose modal exposes a Template selector AND lists every relevant template <AUTOMATION>
+    <TBD>TC.MSG.001.008 Verify selecting a template populates Subject + Body with the template's content <AUTOMATION>
+    <TBD>TC.MSG.001.009 Verify template variables (e.g. {{firstName}}, {{appointmentTime}}) render with the correct values <AUTOMATION>
+
+[State persistence / changes handling]
+    <TBD>TC.MSG.001.010 Verify a sent message appears in the patient's correspondence / message history within N seconds <AUTOMATION>
+    <TBD>TC.MSG.001.011 Verify the message history persists across page reload <MANUAL>
+    <TBD>TC.MSG.001.012 Verify cross-clinic isolation — a message from clinic A is NOT visible on clinic B's patient view <AUTOMATION>
+
+[Logs / Notifications / Audit]
+    <TBD>TC.MSG.001.013 Verify success toast surfaces with a meaningful confirmation on send <AUTOMATION>
+    <TBD>TC.MSG.001.014 Verify the send POST returns 2xx <AUTOMATION>
+    <TBD>TC.MSG.001.015 Verify NO console errors fire during the send sequence <AUTOMATION>
+    <TBD>TC.MSG.001.016 Verify the message actually lands in the test mailbox / SMS sink within N seconds <AUTOMATION> @MAILBOX-DEPENDENCY
+    <TBD>TC.MSG.001.017 Verify the email body / SMS body matches what the user composed (including variable substitution) <AUTOMATION>
+    <TBD>TC.MSG.001.018 Verify the send event is recorded in the audit log <MANUAL>
+
+[Boundary conditions / Limitations]
+    <TBD>TC.MSG.001.019 Verify sending a message body at the maximum supported length (e.g. 160 chars SMS, large email) succeeds <MANUAL>
+    <TBD>TC.MSG.001.020 Verify sending a message body with unicode / emoji renders correctly in the recipient's inbox <AUTOMATION>
+    <TBD>TC.MSG.001.021 Verify send to a patient with NO email on file surfaces a clear error AND does not silently fail <AUTOMATION>
+    <TBD>TC.MSG.001.022 Verify send to a patient with NO phone surfaces a clear error for the SMS channel <AUTOMATION>
+
+[Functionality]
+    <TBD>TC.MSG.001.023 Verify rapid double-click on Send creates exactly ONE message (idempotency / submit guard) <AUTOMATION>
+    <TBD>TC.MSG.001.024 Verify Cancel / X dismisses the compose modal without sending <AUTOMATION>
+    <TBD>TC.MSG.001.025 Verify icon click handler fires reliably on a fresh page load — repeat 10× (catches intermittent bind race) <AUTOMATION>
+    <TBD>TC.MSG.001.026 Verify icon click handler fires reliably after a clinic switch (re-bind on dynamic chrome) <AUTOMATION>
+
+[Load / Performance]
+    <TBD>TC.MSG.001.027 Verify icon-click-to-modal-open is < 1 s p95 <AUTOMATION>
+    <TBD>TC.MSG.001.028 Verify Send-to-confirmation-toast is < 2 s p95 <AUTOMATION>
+    <TBD>TC.MSG.001.029 Verify mailbox-receive latency is < 30 s p95 (server-side queue + delivery) <AUTOMATION>
+
+[Interoperability / Cross-cutting]
+    <TBD>TC.MSG.001.030 Verify a message sent here appears in the bulk Correspondence log (MSG.004) <AUTOMATION>
+    <TBD>TC.MSG.001.031 Verify the patient's marketing-consent flag is honoured (no message sent if opted out + the channel requires it) <MANUAL>
+
+[Accessibility]
+    <TBD>TC.MSG.001.032 Verify each send icon is reachable via keyboard Tab <MANUAL>
+    <TBD>TC.MSG.001.033 Verify each send icon has a non-blank aria-label OR visible text <AUTOMATION> @SELECTOR-DEBT
+
+[Negative tests]
+    <TBD>TC.MSG.001.034 Verify sending an empty body / subject surfaces a clear error <AUTOMATION>
+    <TBD>TC.MSG.001.035 Verify offline / network-failure during send surfaces a clear retryable error <MANUAL>
+    <TBD>TC.MSG.001.036 Verify server 5xx during send surfaces a meaningful error toast <MANUAL>
+    <TBD>TC.MSG.001.037 Verify a user without messaging permission cannot send (RBAC) <MANUAL>
+
+[Security / Vulnerability]
+    <TBD>TC.MSG.001.038 Verify XSS payload in the message body is escaped on render in the message history view <MANUAL>
+    <TBD>TC.MSG.001.039 Verify CSRF token required on send POST <MANUAL>
+    <TBD>TC.MSG.001.040 Verify cross-clinic IDOR — sending cannot target a patient outside the user's clinic scope <MANUAL>

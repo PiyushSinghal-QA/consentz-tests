@@ -1,0 +1,41 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.SMOKE.001.015 — Marketing › Ads — /admin/clinics/3/ads
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Per-Page Load Smoke — Super-User Scope (SMOKE.001)
+Section     : [Functionality]
+Tags        : <AUTOMATION> <BUG:K6>
+Status      : Active regression — automation marked test.fail() until K6 closes
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  1. Open browser DevTools → Network panel; clear the request log.
+  2. Navigate to https://staging.consentz.com/admin/clinics/3/ads
+     (or via Marketing → Ads in the side-nav).
+  3. Wait for the page to settle.
+  4. Filter the Network panel for status 404.
+
+[Expected]
+  • Page returns HTTP 200 and renders the Ads section.
+  • All asset requests load with HTTP 200.
+
+[Actual — open bug K6]
+  • Page renders, but a single image asset 404s:
+      /uploads/medium/1662660561.png
+  • A broken-image placeholder appears where the asset should load.
+
+[Notes]
+  • Severity per TESTPLAN.md §10.3: Minor (single broken image).
+  • Likely cause: stale reference to a previously-uploaded asset that has
+    since been deleted from staging storage.
+  • When K6 is fixed, the page-smokes.spec.ts test.fail() marker for
+    TC.SMOKE.001.015 should be removed.
+
+[Postconfiguration]
+  NA — case does not modify persistent state.

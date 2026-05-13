@@ -1,0 +1,54 @@
+[META]
+    Testname     = DASH.007
+    Longname     = DASH.007 (Welcome Modal & Watch Intro)
+    Module       = Dashboard
+    Flags        = DASH, P2, MODAL, ONBOARDING, DASH.007
+
+[Default settings]
+    <TBD>TC.DASH.007.001 Verify "Watch Intro" floating button is visible at the bottom-right of the dashboard <MANUAL>
+    <TBD>TC.DASH.007.002 Verify Watch Intro button has a play icon + "Watch Intro" label <MANUAL>
+    <TBD>TC.DASH.007.003 Verify Welcome modal does NOT auto-open after the user has dismissed it (per session / per persistent flag) <MANUAL>
+
+[Feature configuration]
+    <TBD>TC.DASH.007.004 Verify clicking "Watch Intro" opens a modal titled "Welcome to Consentz - Quick overview" <MANUAL>
+    <TBD>TC.DASH.007.005 Verify modal contains a video / intro content area <MANUAL>
+    <TBD>TC.DASH.007.006 Verify modal has a "Hide the 'watch intro' link on future visits" option at the bottom <MANUAL>
+    <TBD>TC.DASH.007.007 Verify modal has a Close button (text or icon) at the bottom <MANUAL>
+    <TBD>TC.DASH.007.008 Verify modal has a × close button at the top-right <MANUAL>
+
+[State persistence / changes handling]
+    <TBD>TC.DASH.007.009 Verify ticking "Hide on future visits" + closing modal hides the floating Watch Intro button on subsequent visits <MANUAL>
+    <TBD>TC.DASH.007.010 Verify the "Hide on future visits" preference persists across logout / login <MANUAL>
+    <TBD>TC.DASH.007.011 Verify the Hide preference is per-user (not affecting other users on same browser) <MANUAL>
+
+[Logs / Notifications / Audit]
+    <TBD>TC.DASH.007.012 Verify no console errors when opening / closing the modal <AUTOMATION>
+
+[Boundary conditions / Limitations]
+    NA
+
+[Functionality]
+    <TBD>TC.DASH.007.013 Verify modal closes when × is clicked <AUTOMATION>
+    <TBD>TC.DASH.007.014 Verify modal closes when the bottom Close button is clicked <MANUAL>
+    <TBD>TC.DASH.007.015 Verify modal closes when ESC key is pressed <MANUAL>
+    <TBD>TC.DASH.007.016 Verify modal closes when the overlay (dark backdrop) is clicked <MANUAL>
+    <TBD>TC.DASH.007.017 Verify the intro video plays when the modal is open <MANUAL>
+    <TBD>TC.DASH.007.018 Verify closing the modal mid-playback stops the video <MANUAL>
+
+[Load / Performance]
+    <TBD>TC.DASH.007.019 Verify modal opens within 500 ms of clicking Watch Intro <MANUAL>
+
+[Interoperability / Cross-cutting]
+    <TBD>TC.DASH.007.020 Verify modal renders correctly across Chrome, Firefox, Edge AND is usable on tablet / mobile viewports <MANUAL>
+
+[Accessibility]
+    <TBD>TC.DASH.007.022 Verify focus is trapped inside the modal while open AND returns to the Watch Intro button when modal closes <MANUAL>
+    <TBD>TC.DASH.007.024 Verify modal title is announced to screen reader (aria-labelledby) <MANUAL>
+
+[Negative tests]
+    <TBD>TC.DASH.007.025 Verify rapid open / close clicks don't leave the modal in an inconsistent state <MANUAL>
+    <TBD>TC.DASH.007.026 Verify modal video iframe handles offline / blocked third-party gracefully <MANUAL>
+
+[Security / Vulnerability]
+    <TBD>TC.DASH.007.027 Verify modal video iframe uses sandbox / CSP attributes appropriately <MANUAL>
+

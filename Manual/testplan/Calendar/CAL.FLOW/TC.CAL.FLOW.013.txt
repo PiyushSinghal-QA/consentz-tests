@@ -1,0 +1,25 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.CAL.FLOW.013 — Delete-schedule (appointment cancellation) flow: pick an existing appointment on the calendar grid (.fc-event for one of the bulk-booked test patients), click into it to open the detail modal (#detailsEvent or equivalent), click the Delete / Cancel button, accept any confirmation prompt, verify the .fc-event for that patient disappears from the grid AND a search of the patient detail page confirms the appointment is no longer listed. The same flow doubles as the appointment-cleanup path for afterAll.
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Calendar lifecycle — cross-feature integration (CAL.FLOW)
+Section     : [Negative tests]
+Tags        : <TBD> <AUTOMATION>
+Status      : STUB — see [Steps] block below for status of detailed reproduction
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  STUB — to be expanded on first manual execution.
+  Intent: Delete-schedule (appointment cancellation) flow: pick an existing appointment on the calendar grid (.fc-event for one of the bulk-booked test patients), click into it to open the detail modal (#detailsEvent or equivalent), click the Delete / Cancel button, accept any confirmation prompt, verify the .fc-event for that patient disappears from the grid AND a search of the patient detail page confirms the appointment is no longer listed. The same flow doubles as the appointment-cleanup path for afterAll.
+
+[Expected]
+  STUB — to be filled in alongside the [Steps] block above.
+
+[Postconfiguration]
+  NA — case does not modify persistent state.

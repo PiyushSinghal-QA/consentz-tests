@@ -1,0 +1,139 @@
+PROGRESS LOG
+============
+
+Newest entries on top. Add a dated section each working session — short
+bullet list of what landed, what's blocked, and what's queued next.
+Pair with PENDING-ITEMS.DONOTDELETE.md for tracked bugs / blocked work.
+
+------------------------------------------------------------------------
+
+2026-05-11
+----------
+
+Calendar booking flow built out
+- CalendarPage now covers the full booking flow: open modal, pick
+  practitioner (Select2 via JS+jQuery trigger), pick patient via
+  jQuery-Typeahead with retry-poll for index lag, set Start/End
+  (Bootstrap datepicker accepts DD-MM-YYYY HH:MM), set notes, save,
+  cancel modal, addPatientInline.
+- New tests across 4 calendar files:
+  * calendar-booking.spec.ts — happy path, patient via inline Add
+    Patient, wrong-timing render check, reload-persistence,
+    NEW patient-deleted-while-booked (calendar shows "Patient record
+    deleted" on the orphaned event).
+  * calendar-negative.spec.ts — Cancel button doesn't save, save
+    without practitioner rejected, save without start time rejected.
+  * calendar-fields.spec.ts — booking notes round-trip via the
+    `.tooltipevent` hover popover.
+  * calendar-multitenant.spec.ts — event in clinic 1080 invisible
+    from 1081.
+
+Dev-team-reported bugs investigated
+- Verified DOUBLE BOOKING bug: same practitioner + patient + time
+  silently saves twice. Captured as test.skip in
+  calendar-known-bugs.spec.ts (auto-tripwire on fix).
+- "Wrong timings" — NOT reproduced; v3 renders booked hour correctly
+  in 12-hour locale ("2:00 pm"). Active regression test in place.
+- "Bookings not shown" — NOT reproduced; events render live AND
+  survive page reloads. Active regression test in place.
+
+Key findings logged
+- Patient delete is orphan-not-cascade — the calendar event remains,
+  patient name replaced with "Patient record deleted". Resolves the
+  PENDING-ITEMS linked-data-delete unknown.
+- Calendar uses FullCalendar; URL is /admin/clinics/{id}/appointments/calendar.
+- Hover tooltip class is `.tooltipevent`; surfaces Status, Notes,
+  Payment Status, Time, Treatment.
+- Event clicks: outer <a> intercepts via onclick="calendarEventClick";
+  the inner `.calendar-event-wrapper` div has `data-toggle="modal"
+  data-target="#detailsEvent"` — that's the actual modal trigger.
+  Probe found the modal opens but content was empty post-click
+  (likely async load); needs a v3 probe with longer wait.
+
+POM hygiene
+- Audited; CalendarPage holds all locators + actions, specs read as
+  method calls. One stray `page.locator('#save_appointment')` in the
+  double-booking test fixed to use `calendar.appointmentSave`.
+
+Suite total: 56 active + 5 skipped tracked-bugs (estimated; pending
+run of new tests in this session). Final count to be confirmed
+after the calendar-negative + calendar-fields + calendar-multitenant
+batch runs successfully.
+
+Next session resume points
+- Run the new calendar tests (negative + fields + multitenant +
+  patient-deleted) and fix any failures.
+- Probe v3: the `#detailsEvent` modal contents — drives the
+  edit-appointment + cancel-appointment + checkout flows.
+- Build: edit-existing-appointment, checkout/mark-completed,
+  drag-drop time slot.
+
+------------------------------------------------------------------------
+
+2026-05-10
+----------
+
+Environment
+- Switched base URL from staging.consentz.com -> v3.consentz.com (.env
+  + playwright.config default). Cleared staging auth state; re-auth
+  on v3 works clean. v3 is noticeably faster than staging.
+- Active account: tester2 (super-admin, no OTP). Clinics: 1080 (default)
+  and 1081 (added mid-session for multi-tenant test).
+- Other roles on the account require OTP (Receptionist, Practitioner,
+  Coordinator, Booker, Scheduler "...Tester2"). Role-based tests
+  blocked on OTP; tracked in PENDING-ITEMS.
+
+Patients module — built out from minimal CRUD to 45 tests
+- Split into 11 category-scoped files: smoke/CRUD, negative, bulk,
+  reliability, search, boundary, fields, tabs, security, uniqueness,
+  multitenant. Plus known-bugs (4 skipped tripwires).
+- POM refactor: all field/tab/modal logic moved into PatientsPage
+  methods (fillPersonal/fillAddress/fillPhysical/fillGp,
+  selectGender/getGenderValue, cancelDeleteConfirm, tryDelete,
+  clickTab). Specs read like prose.
+- Tab support: Bootstrap+jQuery-UI tabs (Personal/Address/Physical/GP)
+  with click + JS-fallback to handle binding race.
+- Widget workarounds documented in PatientsPage with comments:
+  Select2-hidden gender select, switch-wrapped contactGp checkbox,
+  duplicate dropdown-shadowed tab anchors.
+- 5xx watchers inline on tests where contract is "no 500":
+  reload-thrash, non-existent-ID, malformed-DOB, required-fields,
+  long-name, security probes.
+
+Cleanup infrastructure
+- tests/fixtures.ts adds `trackedMarkers` — per-test array of search
+  markers; cleanup runs ONLY when the test failed (testInfo.status
+  !== 'passed') so passing runs pay no extra cost. Tests push their
+  marker(s) at create-time. Wired into every patients spec.
+- One-shot _admin-cleanup spec wiped clinic 1080 (22 orphan patients).
+  Deleted after run. Pagination observation: each page held 20 rows
+  (matches "10 expected, UI bug shows 20" note).
+
+DOB validation
+- Probed all 5 inputs (blank, abc, 99-99-9999, 1990-01-01 US format,
+  32-13-2020). On v3 today: only the format check fires.
+- Active test: malformed DOB rejected with "Invalid date format.
+  Please use DD-MM-YYYY." in patients-fields.spec.ts.
+- Skipped (tracked bugs): future DOB and pre-1900 DOB are silently
+  accepted on v3 despite Piyush observing rejection messages
+  elsewhere. Skipped tests will pass automatically when validation
+  lands.
+
+Calendar module — foundation
+- pages/calendar/CalendarPage.ts: 7 locators, 3 methods (goto,
+  switchView, openBookingModal). FullCalendar lib, URL is
+  /admin/clinics/{id}/appointments/calendar.
+- tests/calendar/calendar.spec.ts: 3 smoke tests (page loads, view
+  switcher Day/Week/Month, Book Appointment opens modal). All green.
+- Booking-flow tests (fill modal, save, verify on grid) NOT done yet.
+  Captured in PENDING-ITEMS "In progress".
+
+Final test count: 45 active + 4 skipped tracked-bugs = 49 tests across
+13 files (incl. 1 dashboard smoke + 1 auth setup).
+
+Next session resume points
+- Probe the appointment modal schema (same approach as patient form).
+- Build out booking flow: patient typeahead pick, time slot, service,
+  save, assert appointment on grid.
+- Optional plumbing: promote 5xx + console-error watcher into the
+  fixture so every test catches them automatically.

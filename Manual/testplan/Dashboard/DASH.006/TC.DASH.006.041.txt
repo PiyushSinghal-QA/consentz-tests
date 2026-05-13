@@ -1,0 +1,60 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.DASH.006.041 — Every widget renders its chart on initial dashboard load (without requiring the user to switch widgets / cards to trigger the paint) — manual until deterministic repro is identified
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Widget Grid & Per-Widget Controls (DASH.006)
+Section     : [Functionality]
+Tags        : <TBD> <MANUAL> <BUG:K11>
+Status      : Manual until a deterministic repro is identified — see Notes
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  1. On a fresh dashboard load (default 6 widgets), wait until the
+     "Last updated:" timestamp appears.
+  2. For each widget on the grid, observe whether the chart canvas /
+     numbers area has rendered.
+  3. If a widget appears empty / has only its header but no chart:
+     a. Note which widget(s) are blank.
+     b. Open browser DevTools → Console; record any errors.
+     c. Click the widget's Settings (gear), close the panel without
+        changes, OR remove + re-add the widget from the Library.
+     d. Observe whether the chart NOW renders.
+
+[Expected]
+  • Every widget on the grid renders its full chart / data within a
+    few seconds of dashboard load.
+  • No user interaction (click, switch, settings open) is required to
+    trigger the chart paint.
+
+[Actual — open bug K11]
+  • One or more widgets show only the header / outline on first load;
+    the chart canvas is missing.
+  • Interacting with the widget (opening Settings, switching to a
+    different widget and back, or remove + re-add) makes the chart
+    appear.
+  • Suggests a chart-init race where the rendering library (Chart.js
+    / similar) attaches to a 0-height canvas before the layout
+    settles, and only re-init via interaction triggers a paint.
+
+[Notes]
+  • Severity per TESTPLAN.md §10.3: Major.
+  • Repro is currently non-deterministic — it doesn't always happen
+    on every load. Capture screenshots + DevTools network HAR on the
+    next reproduction to support engineering triage.
+  • Automation deferred until the failure mode is reliably
+    reproducible. Possible automation strategies once the trigger is
+    known:
+      a. Load the dashboard with throttled CPU / network (Playwright
+         emulation), assert each widget canvas has non-zero rendered
+         pixel content.
+      b. Hook the chart library's "onComplete" callback via
+         `addInitScript` and assert it fires for every widget.
+
+[Postconfiguration]
+  NA — case does not modify persistent state.

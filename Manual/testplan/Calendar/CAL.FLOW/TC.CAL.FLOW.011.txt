@@ -1,0 +1,25 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.CAL.FLOW.011 — Booking-cycle timing does not regress over the 5 sequential bookings in FLOW.005: per-iteration cycle = (open modal → fill form → submit → event appears on grid). Assert each individual cycle < 30 s p100 AND max(T2..T5) < T1 * 2.5.
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Calendar lifecycle — cross-feature integration (CAL.FLOW)
+Section     : [Load / Performance]
+Tags        : <TBD> <AUTOMATION>
+Status      : STUB — see [Steps] block below for status of detailed reproduction
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  STUB — to be expanded on first manual execution.
+  Intent: Booking-cycle timing does not regress over the 5 sequential bookings in FLOW.005: per-iteration cycle = (open modal → fill form → submit → event appears on grid). Assert each individual cycle < 30 s p100 AND max(T2..T5) < T1 * 2.5.
+
+[Expected]
+  STUB — to be filled in alongside the [Steps] block above.
+
+[Postconfiguration]
+  NA — case does not modify persistent state.

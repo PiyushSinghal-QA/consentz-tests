@@ -1,0 +1,53 @@
+[META]
+    Testname     = DASH.002
+    Longname     = DASH.002 (Page Identity & Chrome)
+    Module       = Dashboard
+    Flags        = DASH, P0, IDENTITY, CHROME, DASH.002
+
+[Default settings]
+    TC.DASH.002.001 Verify dashboard URL pattern: /admin/clinics/{id}/dashboard <AUTOMATION>
+    TC.DASH.002.002 Verify browser tab title is exactly "Consentz" <AUTOMATION>
+    TC.DASH.002.003 Verify page heading reads "Dashboard - <Clinic Name>" exactly <AUTOMATION>
+    TC.DASH.002.004 Verify subtitle "Last updated: <time>" is visible directly under the heading <AUTOMATION>
+    TC.DASH.002.005 Verify Consentz logo / brand mark is visible in the topbar (note: clicking opens a gridmenu, NOT a dashboard return — see 002.007) <AUTOMATION>
+    <TBD>TC.DASH.002.006 Verify hamburger / sidebar-toggle button is visible on the left rail <AUTOMATION>     # rendered but hidden in default desktop viewport — re-enable with mobile project
+
+[Feature configuration]
+    <TBD>TC.DASH.002.007 Verify clicking the logo opens the gridmenu (data-toggle="gridmenu"); confirm what gridmenu does and document expected behaviour <MANUAL>     # logo is NOT a dashboard return link — see 029 / K13
+    <TBD>TC.DASH.002.008 Verify hamburger toggle expands / collapses the side-nav rail <AUTOMATION>     # blocked by 002.006 (hamburger hidden in current viewport)
+    TC.DASH.002.009 Verify "Last updated" updates immediately after Refresh / Apply <AUTOMATION>
+    TC.DASH.002.029 Verify the Consentz brand logo is a hyperlink that navigates to the dashboard homepage when clicked (test.fail until K13 fixed — currently opens a gridmenu instead) <AUTOMATION> <BUG:K13>
+
+[State persistence / changes handling]
+    <TBD>TC.DASH.002.010 Verify hamburger expanded / collapsed state persists across reload <MANUAL>
+
+[Logs / Notifications / Audit]
+    <TBD>TC.DASH.002.012 Verify no console errors during chrome render <AUTOMATION>
+    TC.DASH.002.013 Verify "Last updated" timestamp format is consistent (12-hour HH:MM:SS XM) <AUTOMATION>
+
+[Boundary conditions / Limitations]
+    <TBD>TC.DASH.002.014 Verify a clinic with a very long name (>50 chars) renders the heading without overflow <MANUAL>
+    <TBD>TC.DASH.002.015 Verify "Last updated" timestamp around midnight rollover <MANUAL>
+
+[Functionality]
+    TC.DASH.002.016 Verify default 6 widgets are rendered: Billings per Coordinator, Billings per Practitioner, Reconciliation, Average Spend per Patient, Appointments, Cancellations <AUTOMATION>
+    <TBD>TC.DASH.002.017 Verify avatar / user-menu trigger renders the logged-in user's name in tooltip / dropdown <AUTOMATION>
+
+[Load / Performance]
+    <TBD>TC.DASH.002.018 Verify chrome (heading, topbar, side rail) renders before widget data loads <MANUAL>
+    <TBD>TC.DASH.002.019 Verify total dashboard page load (DOMContentLoaded → all widgets) under 10 seconds <MANUAL>
+
+[Interoperability / Cross-cutting]
+    <TBD>TC.DASH.002.020 Verify chrome renders identically across Chrome, Firefox, Edge AND at tablet (≤1024px) + mobile (<768px) viewports (side rail collapses to icon-only / off-canvas drawer as appropriate) <MANUAL>
+
+[Accessibility]
+    TC.DASH.002.023 Verify dashboard heading is an <h1> element <AUTOMATION>
+    <TBD>TC.DASH.002.024 Verify chrome elements (logo, hamburger, heading) are keyboard reachable + activatable (Tab + Enter) AND announced by screen reader <MANUAL>
+
+[Negative tests]
+    <TBD>TC.DASH.002.026 Verify dashboard renders correctly for a newly-created clinic with empty data <MANUAL>
+    <TBD>TC.DASH.002.027 Verify dashboard for unauthorised user redirects to login <MANUAL>
+
+[Security / Vulnerability]
+    <TBD>TC.DASH.002.028 Verify clinic name in heading escapes XSS payloads (e.g. clinic named <script>alert(1)</script>) <MANUAL>
+

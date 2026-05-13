@@ -1,0 +1,46 @@
+{
+  "$comment": "Severity overrides + module assignments. Edit any 'severity' field; the dashboard will recompute health on next render. UI overrides also persist per-browser via localStorage.",
+  "weights": {
+    "critical": 25,
+    "major": 10,
+    "minor": 3
+  },
+  "thresholds": {
+    "green": 80,
+    "yellow": 50
+  },
+  "$modulesComment": "Pinned module list — these always render on the dashboard, even with 0 tests / 0 bugs. Bugs auto-route to their `module` field; tests auto-route by spec folder name (patients→Patients, calendar→Calendar, etc.).",
+  "modules": [
+    "Login",
+    "Signup",
+    "Dashboard",
+    "Patients",
+    "Calendar",
+    "Settings",
+    "Smoke"
+  ],
+  "bugs": {
+    "K1":  { "severity": "major",    "module": "Smoke",     "title": "Logs › Blockers returns HTTP 500 (null variable access)" },
+    "K2":  { "severity": "major",    "module": "Dashboard", "title": "Patient Referrals widget — add fails silently" },
+    "K3":  { "severity": "major",    "module": "Dashboard", "title": "Receipts widget — add fails silently" },
+    "K4":  { "severity": "major",    "module": "Dashboard", "title": "Revenue per Period widget — add fails silently" },
+    "K5":  { "severity": "major",    "module": "Smoke",     "title": "Marketing › Template Library — 3× 404s on default thumbnails" },
+    "K6":  { "severity": "minor",    "module": "Smoke",     "title": "Marketing › Ads — 404 on a banner image" },
+    "K7":  { "severity": "major",    "module": "Smoke",     "title": "Report › Custom Reports — 2× 404s on report icons" },
+    "K8":  { "severity": "critical", "module": "Smoke",     "title": "Set Up › T&C — CKEditor JS missing (rich-text editor broken)" },
+    "K9":  { "severity": "major",    "module": "Dashboard", "title": "Clinic Switch — uncaught JS exception on destination init" },
+    "K10": { "severity": "major",    "module": "Dashboard", "title": "Clinic Switch — uncaught JS exception on source teardown" },
+    "K11": { "severity": "major",    "module": "Dashboard", "title": "Widget graphs do not render on initial dashboard load" },
+    "K12": { "severity": "critical", "module": "Dashboard", "title": "Dashboard ↔ Reports — metric mismatch for the same date range" },
+    "K13": { "severity": "major",    "module": "Dashboard", "title": "Brand logo is not a homepage hyperlink (opens gridmenu)" },
+    "K14": { "severity": "major",    "module": "Settings",  "title": "Settings › Subscription — wrong-link routes to Templates" },
+    "K15": { "severity": "critical", "module": "Settings",  "title": "Settings › Subscription — default payment card deletable with no warning" },
+    "K16": { "severity": "minor",    "module": "Login",     "title": "Invalid-credentials error renders inconsistently" },
+    "K17": { "severity": "major",    "module": "Login",     "title": "Lockout / rate-limit timer behaves inconsistently" },
+    "K18": { "severity": "major",    "module": "Dashboard", "title": "Widget Library — no 'selected' / 'in use' indicator on tiles" },
+    "K19": { "severity": "major",    "module": "Dashboard", "title": "Re-clicking a Library tile errors instead of removing widget" },
+    "K20": { "severity": "minor",    "module": "Dashboard", "title": "Widget Settings — three stacked loading spinners shown at once" },
+    "K21": { "severity": "critical", "module": "Patients",  "title": "Add Patient — firstName ≥46 chars returns HTTP 500" },
+    "K22": { "severity": "major",    "module": "Patients",  "title": "Search — non-ASCII firstName patient invisible to list search" }
+  }
+}

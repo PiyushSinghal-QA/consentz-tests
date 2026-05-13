@@ -1,0 +1,42 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.SMOKE.001.028 — Report › Custom Reports — /admin/clinics/3/custom-reports/
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Per-Page Load Smoke — Super-User Scope (SMOKE.001)
+Section     : [Functionality]
+Tags        : <AUTOMATION> <BUG:K7>
+Status      : Active regression — automation marked test.fail() until K7 closes
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  1. Open browser DevTools → Network panel; clear the request log.
+  2. Navigate to https://staging.consentz.com/admin/clinics/3/custom-reports/
+     (or via Report → Custom Reports in the side-nav).
+  3. Wait for the page to settle.
+  4. Filter the Network panel for status 404.
+
+[Expected]
+  • Page returns HTTP 200 and renders the Custom Reports list.
+  • Each report tile shows its decorative SVG icon.
+
+[Actual — open bug K7]
+  • Page renders, but two icon assets 404:
+      /images/custom_reports/Giacomo%20Goodwin.svg
+      /images/custom_reports/New%20Report.svg
+  • Affected tiles render with broken-icon placeholders.
+
+[Notes]
+  • Severity per TESTPLAN.md §10.3: Major (icons consistently missing).
+  • Likely cause: SVG assets not deployed alongside the report metadata,
+    or path mismatch (URL-encoded space vs filename mismatch).
+  • When K7 is fixed, the page-smokes.spec.ts test.fail() marker for
+    TC.SMOKE.001.028 should be removed.
+
+[Postconfiguration]
+  NA — case does not modify persistent state.

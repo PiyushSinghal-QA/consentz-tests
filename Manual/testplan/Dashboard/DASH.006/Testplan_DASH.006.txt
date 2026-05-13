@@ -1,0 +1,59 @@
+[META]
+    Testname     = DASH.006
+    Longname     = DASH.006 (Widget Grid & Per-Widget Controls)
+    Module       = Dashboard
+    Flags        = DASH, P0, WIDGET, GRID, DASH.006
+
+[Default settings]
+    TC.DASH.006.001 Verify dashboard renders 6 default widgets out of the box <AUTOMATION>
+    TC.DASH.006.002 Verify each widget exposes a header with a clearly visible name, a Settings (gear) button, and a Remove (trash) button at the top-right <AUTOMATION>
+
+[Feature configuration]
+    <TBD>TC.DASH.006.005 Verify clicking Settings opens a panel containing a Time Period dropdown (#settings-timeframe with Today / This Week / This Month / Custom Range), an Apply Settings button (#apply-settings), and — where applicable — a View Type dropdown with widget-specific options (e.g. Billings per Coordinator does NOT have one) <AUTOMATION>
+    <TBD>TC.DASH.006.006 Verify changes saved in the Settings panel persist across reload <MANUAL>
+    <TBD>TC.DASH.006.007 Verify clicking Remove on a widget removes it from the grid <MANUAL>
+    <TBD>TC.DASH.006.008 Verify a confirmation prompt appears (or undo affordance is shown) before / after removal <MANUAL>
+    <TBD>TC.DASH.006.033 Verify selecting "Custom Range" in widget Settings reveals From/To date inputs (#settings-start-date, #settings-end-date) scoped to that widget <AUTOMATION>
+    <TBD>TC.DASH.006.034 Verify changing View Type and clicking Apply Settings updates the widget's data presentation accordingly <MANUAL>
+    TC.DASH.006.042 Verify changing widget Settings shows exactly ONE loading indicator (test.fail until K20 fixed — currently three stacked loading spinners appear at once) <AUTOMATION> <BUG:K20>
+
+[State persistence / changes handling]
+    <TBD>TC.DASH.006.009 Verify the widget set AND any per-widget Time Period setting persist across page reload <MANUAL>
+    <TBD>TC.DASH.006.010 Verify widget layout is per-clinic (switching clinics shows that clinic's saved layout) <MANUAL>
+    <TBD>TC.DASH.006.011 Verify widget layout persists across logout / login (stored server-side, not just localStorage) <MANUAL>
+    <TBD>TC.DASH.006.035 Verify changing the Time Period in a widget's Settings + clicking Apply Settings affects ONLY that widget; other widgets retain their own Time Period <AUTOMATION>
+    <TBD>TC.DASH.006.037 Verify clicking the main dashboard "Apply" button OVERRIDES every widget's per-widget Time Period (they all reset to the global value) <AUTOMATION>
+    <TBD>TC.DASH.006.038 Verify clicking the main dashboard "Refresh" button PRESERVES every widget's per-widget Time Period (no widget reverts) <AUTOMATION>
+
+[Logs / Notifications / Audit]
+    <TBD>TC.DASH.006.012 Verify no console errors AND no 4xx / 5xx XHRs from widget data endpoints under normal use <AUTOMATION>
+
+[Boundary conditions / Limitations]
+    <TBD>TC.DASH.006.014 Verify dashboard with 0 widgets renders an empty-state placeholder (or default widgets are restored) <MANUAL>
+    <TBD>TC.DASH.006.015 Verify dashboard with the maximum 6 widgets all render without overlap <AUTOMATION>
+
+[Functionality]
+    <TBD>TC.DASH.006.016 Verify each widget renders meaningful data when the clinic has data AND a "no data" empty-state when the clinic / range has no data <MANUAL>
+    <TBD>TC.DASH.006.018 Verify drag-to-reorder if supported (probe: try dragging a widget tile) <MANUAL>
+    <TBD>TC.DASH.006.019 Verify removing a widget and adding it back through the Library renders fresh data <MANUAL>
+    <TBD>TC.DASH.006.041 Verify every widget renders its chart on initial dashboard load (without requiring the user to switch widgets / cards to trigger the paint) — manual until deterministic repro is identified <MANUAL> <BUG:K11>
+
+[Load / Performance]
+    <TBD>TC.DASH.006.020 Verify all 6 widgets render data within 10 seconds on first load AND render time stays acceptable on a clinic with high data volume <MANUAL>
+
+[Interoperability / Cross-cutting]
+    <TBD>TC.DASH.006.022 Verify widgets render consistently across Chrome, Firefox, Edge AND remain usable at tablet and mobile viewports <MANUAL>
+
+[Accessibility]
+    <TBD>TC.DASH.006.024 Verify each widget is wrapped in a screen-reader landmark (region with aria-label) AND its Settings + Remove buttons have accessible labels <MANUAL>
+    <TBD>TC.DASH.006.026 Verify widget content (charts) has alternative text / data-table fallback for screen readers <MANUAL>
+
+[Negative tests]
+    <TBD>TC.DASH.006.027 Verify a single widget XHR failure does not break the rest of the grid <MANUAL>
+    <TBD>TC.DASH.006.028 Verify removing a widget while a widget XHR is in-flight does not error <MANUAL>
+    <TBD>TC.DASH.006.039 Verify per-widget Custom Range with To < From — Apply Settings rejected, swapped, or visibly errored (document actual behaviour) <MANUAL>
+    <TBD>TC.DASH.006.040 Verify clicking Apply Settings while offline shows graceful error (no infinite spinner) <MANUAL>
+
+[Security / Vulnerability]
+    <TBD>TC.DASH.006.029 Verify widget configuration cannot be tampered to display data from a different clinic <MANUAL>
+

@@ -1,0 +1,53 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.DASH.002.029 — The Consentz brand logo is a hyperlink that navigates to the dashboard homepage when clicked (test.fail until K13 fixed — currently opens a gridmenu instead)
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Page Identity & Chrome (DASH.002)
+Section     : [Feature configuration]
+Tags        : <AUTOMATION> <BUG:K13>
+Status      : Active regression — automation marked test.fail() until K13 closes
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  1. From any non-dashboard page (e.g. Marketing → Prospects), observe
+     the Consentz brand logo in the top-left of the side rail / topbar.
+  2. Hover the logo — verify the cursor turns into a hyperlink hand
+     (`cursor: pointer` is not enough; an `<a href="…">` ancestor must
+     be present for a proper hyperlink).
+  3. Right-click the logo → "Inspect" — confirm the surrounding markup.
+  4. Click the logo with the left mouse button.
+
+[Expected]
+  • Logo image is visible.
+  • Logo image is wrapped in an `<a>` whose `href` points to the
+    user's current-clinic dashboard URL (e.g.
+    `/admin/clinics/3/dashboard`) or the site root (`/`).
+  • Left-click navigates the browser to that dashboard URL.
+  • Right-click → "Open in new tab" works (only an `<a href>` supports
+    it).
+
+[Actual — open bug K13]
+  • Logo is wrapped in an element with `data-toggle="gridmenu"` rather
+    than an `<a href>`.
+  • Left-click toggles a gridmenu dropdown — does NOT navigate.
+  • There is no way to "go to homepage" from the logo, breaking
+    standard product-logo UX expectations.
+
+[Notes]
+  • Severity per TESTPLAN.md §10.3: Major.
+  • Existing `TC.DASH.002.005` only checks the logo is visible.
+  • Existing `TC.DASH.002.007` documents the gridmenu side-effect as
+    the current (broken) behaviour. When K13 is fixed, BOTH tests need
+    updating: this one (.029) loses its `test.fail` marker, and .007
+    is rewritten to verify gridmenu reaches via a different trigger
+    (or deleted if the gridmenu is removed entirely).
+  • Automation lives in `tests/dashboard/known-bug-misc.spec.ts`.
+
+[Postconfiguration]
+  NA — case does not modify persistent state.

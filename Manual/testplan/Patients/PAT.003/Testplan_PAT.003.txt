@@ -1,0 +1,70 @@
+[META]
+    Testname     = PAT.003
+    Longname     = PAT.003 (Patient Search)
+    Module       = Patients
+    Flags        = PAT, P0, SEARCH, PERFORMANCE, AUTOCOMPLETE, PAT.003
+
+# CTO-flagged frequent-breakage area (raised 2026-05-07): "Patient search
+# is not working, should be fast." Two distinct concerns are bundled:
+#   • Correctness: matches the user expects (substring, accent-insensitive,
+#     across name + email + phone) — sometimes don't return.
+#   • Speed: typeahead lag, debounce broken, search-to-first-result slow
+#     enough that users retype.
+#
+# Sister surface: the in-Calendar booking-form patient search lives in
+# CAL.001 (TC.CAL.001.006-007 + .037) — they share the search backend
+# but typically not the front-end widget. Keep tests aligned but separate.
+
+[Default settings]
+    TC.PAT.003.001 Verify a primary search input is visible on the Patients list page <AUTOMATION>
+    TC.PAT.003.002 Verify the search input has a meaningful placeholder (e.g. "Search") <AUTOMATION>
+    <TBD>TC.PAT.003.003 Verify the search input is keyboard-focusable on page load via a known shortcut (e.g. "/" or Cmd-K) <MANUAL>
+
+[Feature configuration]
+    TC.PAT.003.004 Verify substring match round-trip: typing a known sub-string and submitting carries the query in the URL AND narrows the list <AUTOMATION>
+    <TBD>TC.PAT.003.005 Verify case-insensitive match: "JANE" returns "jane doe" <AUTOMATION>
+    <TBD>TC.PAT.003.006 Verify accent-insensitive match: "renee" returns "Renée" <AUTOMATION>
+    <TBD>TC.PAT.003.007 Verify search across columns: typing an email substring returns matching patients <AUTOMATION>
+    <TBD>TC.PAT.003.008 Verify search across columns: typing a phone substring returns matching patients <AUTOMATION>
+    <TBD>TC.PAT.003.009 Verify clearing the search input restores the full list <AUTOMATION>
+
+[State persistence / changes handling]
+    <TBD>TC.PAT.003.010 Verify search query is reflected in the URL OR clearable via browser back <MANUAL>
+    <TBD>TC.PAT.003.011 Verify search query does NOT survive a hard reload (or DOES, where intentional) <MANUAL>
+
+[Logs / Notifications / Audit]
+    <TBD>TC.PAT.003.012 Verify no console errors / 4xx / 5xx during search keystrokes <AUTOMATION>
+
+[Boundary conditions / Limitations]
+    <TBD>TC.PAT.003.013 Verify single-character query returns matches OR a clear "type more characters" message <AUTOMATION>
+    <TBD>TC.PAT.003.014 Verify a query with only special characters (apostrophe, dash) returns matches AND does not 500 <AUTOMATION>
+    <TBD>TC.PAT.003.015 Verify a 100-char query is accepted AND truncated server-side without 500 <MANUAL>
+    <TBD>TC.PAT.003.016 Verify search on a clinic with 10k+ patients still returns within p95 budget <MANUAL>
+
+[Functionality]
+    <TBD>TC.PAT.003.017 Verify rapid typing (8 keystrokes within 1 s) results in EXACTLY ONE final XHR (debounce works) <AUTOMATION>
+    <TBD>TC.PAT.003.018 Verify search results render in the same viewport without scrolling jump <MANUAL>
+    <TBD>TC.PAT.003.019 Verify a freshly-created patient (PAT.002) is searchable within N seconds <AUTOMATION>
+    <TBD>TC.PAT.003.020 Verify "no results" empty state is clear AND not a blank panel <AUTOMATION>
+
+[Load / Performance]
+    <TBD>TC.PAT.003.021 Verify time from last keystroke to first result paint is < 500 ms p95 <AUTOMATION> @PERF-BUDGET
+    <TBD>TC.PAT.003.022 Verify time from last keystroke to first result paint is < 250 ms p50 <AUTOMATION> @PERF-BUDGET
+    <TBD>TC.PAT.003.023 Verify search response payload is < 200 KB for typical queries (10-20 results) <MANUAL>
+
+[Interoperability / Cross-cutting]
+    <TBD>TC.PAT.003.024 Verify search results match the in-Calendar booking-form patient search results for the same query (CAL.001.006) <AUTOMATION>
+    <TBD>TC.PAT.003.025 Verify search results match the recipient-picker results in messaging (MSG.001) for the same query <AUTOMATION>
+
+[Accessibility]
+    <TBD>TC.PAT.003.026 Verify search input has an associated <label> OR aria-label <AUTOMATION>
+    <TBD>TC.PAT.003.027 Verify result count change is announced via aria-live region <MANUAL>
+    <TBD>TC.PAT.003.028 Verify keyboard arrow / Enter / Esc behaviour on the result list (where applicable) <MANUAL>
+
+[Negative tests]
+    <TBD>TC.PAT.003.029 Verify offline mid-typing surfaces a clear error AND does not silently swallow keystrokes <MANUAL>
+    <TBD>TC.PAT.003.030 Verify a query that triggers a 5xx surfaces a clear error toast <MANUAL>
+
+[Security / Vulnerability]
+    <TBD>TC.PAT.003.031 Verify SQL-injection-shaped queries are escaped — return zero results without error <MANUAL>
+    <TBD>TC.PAT.003.032 Verify cross-clinic IDOR — searching cannot return patients from a clinic the user does not belong to <MANUAL>

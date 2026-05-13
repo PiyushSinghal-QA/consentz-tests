@@ -1,0 +1,25 @@
+═══════════════════════════════════════════════════════════════════════════════
+ TC.PAT.FLOW.009 — Download icon (#download-patient) downloads a CSV; the downloaded file's first column row is exactly: id,status,username,first_name,last_name,birthday,address1,address2,town,state,country,postcode,country_code,phone,country_code_alt,secondary_phone,email,gender,next_kin,next_kin_phone,description,receive_special_offer_sms,receive_special_offer_email,receive_special_offer_push,receive_reminder_sms,receive_reminder_email,receive_reminder_push,gp_address1,gp_address2,gp_town,gp_county,gp_country,gp_post_code,occupation,gp_name,number_nhs,marketing_source,created_at — AND each of the 10 markered patients added in FLOW.004 appears in the file (matched by first_name = `pwt-{runId}-{i}-FN`)
+═══════════════════════════════════════════════════════════════════════════════
+Sub-feature : Patient lifecycle — cross-feature integration (PAT.FLOW)
+Section     : [Functionality]
+Tags        : <TBD> <AUTOMATION>
+Status      : STUB — see [Steps] block below for status of detailed reproduction
+
+[Preconfiguration]
+  Account    = super-user (demo / Beautify Clinic, id=3)
+  Browser    = Chrome (latest stable)
+  Steps      = 1. Open https://staging.consentz.com/admin/login
+               2. Log in with CONSENTZ_USERNAME / CONSENTZ_PASSWORD.
+               3. Wait for /admin/clinics/3/dashboard.
+               4. Dismiss "Welcome to Consentz" modal if present.
+
+[Steps]
+  STUB — to be expanded on first manual execution.
+  Intent: Download icon (#download-patient) downloads a CSV; the downloaded file's first column row is exactly: id,status,username,first_name,last_name,birthday,address1,address2,town,state,country,postcode,country_code,phone,country_code_alt,secondary_phone,email,gender,next_kin,next_kin_phone,description,receive_special_offer_sms,receive_special_offer_email,receive_special_offer_push,receive_reminder_sms,receive_reminder_email,receive_reminder_push,gp_address1,gp_address2,gp_town,gp_county,gp_country,gp_post_code,occupation,gp_name,number_nhs,marketing_source,created_at — AND each of the 10 markered patients added in FLOW.004 appears in the file (matched by first_name = `pwt-{runId}-{i}-FN`)
+
+[Expected]
+  STUB — to be filled in alongside the [Steps] block above.
+
+[Postconfiguration]
+  NA — case does not modify persistent state.
