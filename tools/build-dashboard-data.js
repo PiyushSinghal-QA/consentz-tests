@@ -41,11 +41,24 @@ function moduleFromPath(specPath) {
   const m = norm.match(/(?:^|tests\/)([^\/]+)\/[^\/]+\.spec\.ts$/);
   if (!m) return 'Other';
   const folder = m[1].toLowerCase();
+  // Folder names use kebab/lowercase (filesystem-safe). The display label
+  // must match the pinned module list in bug-severity.json EXACTLY — so
+  // "setup" maps to "Set Up" (with space), not "Setup". Any folder not
+  // listed falls back to title-case so a stray spec folder doesn't error.
   return {
     auth: 'Login',
     patients: 'Patients',
     calendar: 'Calendar',
     dashboard: 'Dashboard',
+    website: 'Website',
+    marketing: 'Marketing',
+    'stock-control': 'Stock Control',
+    business: 'Business',
+    report: 'Report',
+    setup: 'Set Up',
+    settings: 'Settings',
+    logs: 'Logs',
+    help: 'Help',
   }[folder] || cap(folder);
 }
 
