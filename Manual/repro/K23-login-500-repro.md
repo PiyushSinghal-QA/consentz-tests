@@ -1,6 +1,12 @@
 # K23 — Manual reproduction steps
 
-**Status as of 2026-05-13:** Probe-verified on **v4** (reproduces), probe-verified on **v3** (does NOT reproduce). K23 has been dropped from the active dashboard because v3 is the target environment; this doc is kept for manual cross-environment verification.
+**Status as of 2026-05-13 (afternoon):** No longer reproducing on **either** v3 or v4 via the "non-existent username" path. Manual check by Piyush on both envs returned the correct inline error:
+
+> *"This account does not exist. Please enter valid credentials or contact support at info@consentz.com."*
+
+K23 was dropped from the active dashboard. The probe spec at `Automation/tests/auth/login-known-bugs.spec.ts` was converted into a positive regression test that locks in this contract — if either env regresses to the 500 again, the test goes red.
+
+**Earlier observation:** An automated probe at ~07:00 UTC on 2026-05-13 against v4 with the same inputs returned the Symfony 500 page. Either the v4 server was in a transient bad state, or the bug only fires on a different code path (e.g. real user + wrong password, instead of non-existent user). The "real user / wrong password" variant has not been manually verified yet — if a 500 is observed on that path, re-open K23 with the specific input class noted.
 
 ## The bug
 
@@ -18,10 +24,10 @@ Run the same steps on both `https://v3.consentz.com/admin/login` and `https://v4
 
 ## Expected vs observed
 
-| Environment | URL after submit                  | Page content                                                                                          | Verdict |
-| ----------- | --------------------------------- | ----------------------------------------------------------------------------------------------------- | ------- |
-| v3 (target) | `/admin/login` (bounced back)     | Login form re-rendered with an inline error ("Invalid credentials" / similar). HTTP 200. **Correct.** | OK      |
-| v4          | `/admin/login_check`              | Symfony error template: *"Oops! An Error Occurred — The server returned a '500 Internal Server Error'."* No login form visible. **Buggy.** | K23 fires |
+| Environment | URL after submit                  | Page content                                                                                          | Verdict (current) |
+| ----------- | --------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------- |
+| v3 (target) | `/admin/login` (bounced back)     | Login form re-rendered with the inline error *"This account does not exist. Please enter valid credentials..."*. HTTP 200. | OK      |
+| v4          | `/admin/login` (bounced back)     | Same inline error as v3. HTTP 200. | OK (was buggy at ~07:00 UTC 2026-05-13 — see status note) |
 
 ## What to verify manually
 

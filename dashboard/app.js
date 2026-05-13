@@ -7,6 +7,7 @@ const SEVERITY_VALUES = ['critical', 'major', 'minor'];
 
 let state = {
   data: null,
+  trend: null,     // { points: [...] } from data/trend.json
   overrides: {},   // bugId -> severity (string)
   charts: {},      // canvasId -> Chart instance
 };
@@ -21,6 +22,8 @@ let state = {
     showError(`Could not load data/results.json (${e.message}). Run \`node tools/build-dashboard-data.js\` first.`);
     return;
   }
+  // trend.json is optional — first-ever run won't have it
+  state.trend = await fetchJson('data/trend.json').catch(() => ({ points: [] }));
   bindControls();
   render();
 })();
@@ -81,6 +84,7 @@ function render() {
   // Top metadata
   const gen = new Date(d.generatedAt);
   document.getElementById('generated-at').textContent = `Last update: ${gen.toLocaleString()}`;
+  renderRunDelta(d);
   document.getElementById('w-critical').textContent = weights.critical;
   document.getElementById('w-major').textContent = weights.major;
   document.getElementById('w-minor').textContent = weights.minor;
@@ -107,6 +111,9 @@ function render() {
   // Trend section: 4 pies (prev vs current × tests + bugs)
   renderTrendCharts(d);
 
+  // Health-over-time line chart from the archived history
+  renderTrendLine();
+
   // Module grid
   renderModules(d.modules, weights, thresholds);
 
@@ -116,6 +123,27 @@ function render() {
 
   // Failed tests
   renderFailures(d.modules);
+}
+
+// ---- Run delta (header indicator) --------------------------------------
+
+function renderRunDelta(d) {
+  const el = document.getElementById('run-delta');
+  if (!el) return;
+  if (!d.previous || !d.previous.overall) { el.textContent = ''; return; }
+
+  const cur = d.overall || {};
+  const prev = d.previous.overall || {};
+  const dPass = (cur.pass || 0) - (prev.pass || 0);
+  const dFail = (cur.fail || 0) - (prev.fail || 0);
+
+  const arrow = (n) => n > 0 ? '▲' : n < 0 ? '▼' : '•';
+  const cls = (n, goodIfNeg) => n === 0 ? 'delta-flat' : (goodIfNeg ? (n < 0 ? 'delta-good' : 'delta-bad') : (n > 0 ? 'delta-good' : 'delta-bad'));
+
+  el.innerHTML = `
+    <span class="${cls(dPass, false)}">${arrow(dPass)} ${dPass >= 0 ? '+' : ''}${dPass} pass</span>
+    <span class="${cls(dFail, true)}">${arrow(dFail)} ${dFail >= 0 ? '+' : ''}${dFail} fail</span>
+  `;
 }
 
 // ---- Trend section: 4 pies ---------------------------------------------
@@ -313,6 +341,96 @@ function coverageBadge(bug) {
   return `<span class="badge coverage-none" title="No test maps to this defect yet">⚠ no test</span>`;
 }
 
+// ---- Health-over-time line chart ---------------------------------------
+
+function renderTrendLine() {
+  const ctx = document.getElementById('trend-line-canvas');
+  if (!ctx) return;
+  const points = (state.trend && state.trend.points) || [];
+  const meta = document.getElementById('trend-line-meta');
+  if (state.charts['trend-line-canvas']) state.charts['trend-line-canvas'].destroy();
+
+  if (points.length === 0) {
+    meta.textContent = 'No archived runs yet — the trend line will populate once a few CI runs have completed.';
+    return;
+  }
+  meta.textContent = `${points.length} archived run${points.length === 1 ? '' : 's'}. Health = 100 − weighted bug counts. Hover for run details.`;
+
+  const labels = points.map((p) => new Date(p.generatedAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }));
+  const healthData = points.map((p) => p.health);
+  const passRateData = points.map((p) => p.passRate);
+  const bugTotalData = points.map((p) => p.bugs.total);
+
+  state.charts['trend-line-canvas'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Health score',
+          data: healthData,
+          yAxisID: 'y',
+          borderColor: '#6366f1',
+          backgroundColor: 'rgba(99,102,241,0.12)',
+          fill: true,
+          tension: 0.25,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+        },
+        {
+          label: 'Pass rate %',
+          data: passRateData,
+          yAxisID: 'y',
+          borderColor: '#10b981',
+          borderDash: [4, 4],
+          backgroundColor: 'transparent',
+          tension: 0.25,
+          pointRadius: 2,
+          pointHoverRadius: 4,
+        },
+        {
+          label: 'Bug count',
+          data: bugTotalData,
+          yAxisID: 'y2',
+          borderColor: '#ef4444',
+          backgroundColor: 'transparent',
+          tension: 0.25,
+          pointRadius: 2,
+          pointHoverRadius: 4,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            afterBody: (ctx) => {
+              const i = ctx[0]?.dataIndex ?? 0;
+              const p = points[i];
+              if (!p) return '';
+              return [
+                `Tests: ${p.pass}/${p.total} passed, ${p.fail} failed, ${p.skipped} skipped`,
+                `Bugs: ${p.bugs.critical} critical, ${p.bugs.major} major, ${p.bugs.minor} minor`,
+              ];
+            },
+          },
+        },
+      },
+      scales: {
+        y:  { position: 'left',  min: 0, max: 100, title: { display: true, text: 'Health / Pass rate (%)' } },
+        y2: { position: 'right', min: 0, beginAtZero: true, grid: { drawOnChartArea: false }, title: { display: true, text: 'Bug count' } },
+        x:  { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } },
+      },
+    },
+  });
+}
+
+// ---- Failures + lightbox -----------------------------------------------
+
 function renderFailures(modules) {
   const list = document.getElementById('failures-list');
   list.innerHTML = '';
@@ -325,22 +443,80 @@ function renderFailures(modules) {
   }
 
   if (failed.length === 0) {
-    list.innerHTML = '<p style="color:var(--text-muted)">No failed tests on this run. 🎉</p>';
+    list.innerHTML = '<p style="color:var(--text-muted)">No failed tests on this run.</p>';
     return;
   }
 
   for (const t of failed) {
     const card = document.createElement('div');
     card.className = 'failure-card';
+    card.tabIndex = 0;
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', `Open failure details for ${t.title}`);
+
+    const firstErr = stripCtrl((t.errors || [])[0] || '');
+    const errPreview = firstErr.split('\n').slice(0, 3).join('\n');
+    const thumbCount = (t.attachments || []).length;
+
     card.innerHTML = `
-      <h4>${escapeHtml(t.title)} <small style="color:var(--text-muted);font-weight:normal">— ${escapeHtml(t.module)}</small></h4>
+      <h4>${escapeHtml(t.title)} <small class="failure-mod">— ${escapeHtml(t.module)}</small></h4>
       <div class="file">${escapeHtml(t.file || '')}${t.line ? ':' + t.line : ''}</div>
-      ${t.retries ? `<div style="font-size:12px;color:var(--text-muted)">Retried ${t.retries}×</div>` : ''}
-      ${t.errors && t.errors.length ? `<pre>${escapeHtml(t.errors.join('\n\n'))}</pre>` : ''}
-      ${(t.attachments || []).map((a) => `<img src="../${escapeHtml(a.path)}" alt="${escapeHtml(a.name)}" />`).join('')}
+      ${t.retries ? `<div class="retries">Retried ${t.retries}×</div>` : ''}
+      ${errPreview ? `<pre class="err-preview">${escapeHtml(errPreview)}${firstErr.split('\n').length > 3 ? '\n…' : ''}</pre>` : ''}
+      <div class="failure-meta">
+        ${thumbCount ? `<span class="failure-thumb-count">📷 ${thumbCount} screenshot${thumbCount === 1 ? '' : 's'}</span>` : '<span class="muted">no screenshot</span>'}
+        <span class="failure-open">Open details →</span>
+      </div>
     `;
+    card.addEventListener('click', () => openFailureDetail(t));
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFailureDetail(t); }
+    });
     list.appendChild(card);
   }
+}
+
+function openFailureDetail(t) {
+  const dlg = document.getElementById('failure-detail');
+  const body = document.getElementById('failure-detail-body');
+  const errors = (t.errors || []).map(stripCtrl);
+  const attachments = t.attachments || [];
+
+  body.innerHTML = `
+    <h3>${escapeHtml(t.title)}</h3>
+    <p class="failure-detail-sub"><strong>${escapeHtml(t.module)}</strong> · <code>${escapeHtml(t.file || '')}${t.line ? ':' + t.line : ''}</code>${t.retries ? ` · retried ${t.retries}×` : ''}${t.durationMs ? ` · ${Math.round(t.durationMs / 1000)}s` : ''}</p>
+    ${errors.length ? `<h4>Errors</h4>${errors.map((e) => `<pre class="err-full">${escapeHtml(e)}</pre>`).join('')}` : ''}
+    ${attachments.length ? `
+      <h4>Screenshots <small class="muted">(click to enlarge)</small></h4>
+      <div class="screenshot-grid">
+        ${attachments.map((a) => `
+          <figure class="shot" data-path="${escapeHtml(a.path)}" data-name="${escapeHtml(a.name || '')}">
+            <img src="${escapeHtml(a.path)}" alt="${escapeHtml(a.name || 'screenshot')}" loading="lazy" />
+            <figcaption>${escapeHtml(a.name || '')}</figcaption>
+          </figure>
+        `).join('')}
+      </div>` : ''}
+  `;
+  body.querySelectorAll('.shot').forEach((fig) => {
+    fig.addEventListener('click', () => openImageLightbox(fig.dataset.path, fig.dataset.name));
+  });
+  dlg.showModal();
+}
+
+function openImageLightbox(path, name) {
+  const dlg = document.getElementById('image-lightbox');
+  const img = document.getElementById('image-lightbox-img');
+  const cap = document.getElementById('image-lightbox-caption');
+  img.src = path;
+  img.alt = name || '';
+  cap.textContent = name || '';
+  dlg.showModal();
+}
+
+function stripCtrl(s) {
+  // Strip ANSI escape sequences + carriage returns that Playwright leaves
+  // in JSON error messages.
+  return String(s).replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').replace(/\r/g, '');
 }
 
 function openBugDetail(bug) {

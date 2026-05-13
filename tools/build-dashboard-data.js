@@ -26,8 +26,10 @@ const PW_TEST_RESULTS_DIR = path.join(ROOT, 'Automation/test-results');
 const BUG_SEVERITY = path.join(ROOT, 'bug-severity.json');
 const OUT = path.join(ROOT, 'dashboard/data/results.json');
 const PREV_OUT = path.join(ROOT, 'dashboard/data/previous.json');
+const TREND_OUT = path.join(ROOT, 'dashboard/data/trend.json');
 const ARCHIVE_DIR = path.join(ROOT, 'dashboard/data/history');
 const SCREENSHOTS_DIR = path.join(ROOT, 'dashboard/data/screenshots');
+const TREND_MAX_POINTS = 30;
 // In CI, the previous run is downloaded from GH Pages into this file before
 // the build script runs (see .github/workflows/dashboard.yml). When present,
 // it's the cross-run "previous"; otherwise we fall back to whatever is in
@@ -279,6 +281,12 @@ function main() {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   fs.writeFileSync(path.join(ARCHIVE_DIR, `${stamp}.json`), JSON.stringify(payload, null, 2));
 
+  // 11. Aggregate the archive into a compact time-series for the trend chart.
+  //     Last TREND_MAX_POINTS snapshots, oldest → newest. Each point is a
+  //     small object (no per-test detail) so the JSON stays tiny.
+  const trend = buildTrendSeries(severity.weights);
+  fs.writeFileSync(TREND_OUT, JSON.stringify(trend, null, 2));
+
   const screenshotCount = fs.existsSync(SCREENSHOTS_DIR) ? fs.readdirSync(SCREENSHOTS_DIR).length : 0;
   console.log(`[dashboard] Wrote ${OUT}`);
   console.log(`[dashboard] Tests: ${overall.pass}/${overall.total} passed, ${overall.fail} failed, ${overall.skipped} skipped`);
@@ -286,6 +294,45 @@ function main() {
   console.log(`[dashboard] Bugs: ${payload.bugs.length} across ${new Set(payload.bugs.map((b) => b.module)).size} modules`);
   console.log(`[dashboard] Screenshots copied: ${screenshotCount}`);
   console.log(`[dashboard] Previous-run snapshot: ${previous ? `present (from ${previous.generatedAt})` : 'none'}`);
+  console.log(`[dashboard] Trend points: ${trend.points.length} (last ${TREND_MAX_POINTS})`);
+}
+
+function buildTrendSeries(weights) {
+  if (!fs.existsSync(ARCHIVE_DIR)) return { points: [] };
+  const files = fs.readdirSync(ARCHIVE_DIR)
+    .filter((f) => f.endsWith('.json'))
+    .sort()
+    .slice(-TREND_MAX_POINTS);
+
+  const points = [];
+  for (const f of files) {
+    try {
+      const data = JSON.parse(fs.readFileSync(path.join(ARCHIVE_DIR, f), 'utf8'));
+      const bugCounts = { critical: 0, major: 0, minor: 0 };
+      for (const b of data.bugs || []) bugCounts[b.severity] = (bugCounts[b.severity] || 0) + 1;
+      const health = Math.max(
+        0,
+        100 - ((bugCounts.critical || 0) * (weights.critical ?? 25) +
+               (bugCounts.major    || 0) * (weights.major    ?? 10) +
+               (bugCounts.minor    || 0) * (weights.minor    ?? 3)),
+      );
+      const overall = data.overall || { pass: 0, fail: 0, skipped: 0, total: 0 };
+      const passRate = overall.total ? Math.round((overall.pass / overall.total) * 100) : 0;
+      points.push({
+        generatedAt: data.generatedAt,
+        health,
+        pass: overall.pass,
+        fail: overall.fail,
+        skipped: overall.skipped,
+        total: overall.total,
+        passRate,
+        bugs: { total: (data.bugs || []).length, ...bugCounts },
+      });
+    } catch (e) {
+      console.warn(`[dashboard] skipped bad history file ${f}: ${e.message}`);
+    }
+  }
+  return { points };
 }
 
 main();

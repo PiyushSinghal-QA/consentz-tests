@@ -14,7 +14,8 @@
       <span class="tagline">Test Suite Health</span>
     </div>
     <div class="meta">
-      <span id="generated-at">Loading…</span>
+      <span id="generated-at" class="meta-stamp">Loading…</span>
+      <span id="run-delta" class="meta-delta" title="Change vs previous run"></span>
       <button id="reset-overrides" class="btn-secondary" title="Reset all severity changes to defaults from bug-severity.json">Reset overrides</button>
     </div>
   </header>
@@ -48,11 +49,13 @@
     </section>
 
     <section class="trends">
-      <h2>Trends — previous vs current run</h2>
-      <p class="muted" id="trends-meta">Comparing this run against the previous archived snapshot.</p>
+      <div class="section-head">
+        <h2>Run comparison</h2>
+        <p class="muted" id="trends-meta">Previous vs current run.</p>
+      </div>
 
       <div class="chart-group">
-        <h3>Group A — Test outcome</h3>
+        <h3><span class="group-badge">A</span> Test outcome</h3>
         <div class="chart-pair">
           <div class="chart-card">
             <h4>Previous run</h4>
@@ -66,7 +69,7 @@
       </div>
 
       <div class="chart-group">
-        <h3>Group B — Bug severity</h3>
+        <h3><span class="group-badge">B</span> Bug severity</h3>
         <div class="chart-pair">
           <div class="chart-card">
             <h4>Previous run</h4>
@@ -78,6 +81,14 @@
           </div>
         </div>
       </div>
+    </section>
+
+    <section class="trend-line">
+      <div class="section-head">
+        <h2>Health over time</h2>
+        <p class="muted" id="trend-line-meta">Last 30 archived runs. Health = 100 − weighted bug counts.</p>
+      </div>
+      <div class="trend-line-wrap"><canvas id="trend-line-canvas"></canvas></div>
     </section>
 
     <section class="modules">
@@ -129,6 +140,19 @@
   <dialog id="bug-detail">
     <button class="dialog-close" onclick="document.getElementById('bug-detail').close()">✕</button>
     <div id="bug-detail-body"></div>
+  </dialog>
+
+  <!-- Failure detail dialog (screenshot lightbox + full error) -->
+  <dialog id="failure-detail">
+    <button class="dialog-close" onclick="document.getElementById('failure-detail').close()">✕</button>
+    <div id="failure-detail-body"></div>
+  </dialog>
+
+  <!-- Image lightbox (nested zoom on screenshots inside failure detail) -->
+  <dialog id="image-lightbox">
+    <button class="dialog-close" onclick="document.getElementById('image-lightbox').close()">✕</button>
+    <img id="image-lightbox-img" alt="" />
+    <div id="image-lightbox-caption"></div>
   </dialog>
 
   <script src="app.js"></script>
