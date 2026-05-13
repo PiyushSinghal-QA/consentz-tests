@@ -6,6 +6,9 @@ Automation/.env
 Automation/*.log
 Automation/allure-results/
 Automation/allure-report/
+# CI-only artifacts fetched from the prior Pages deployment for trend
+# persistence — never tracked in git.
+Automation/.previous-*.json
 
 # Dashboard data is regenerated on every run; only commit the static
 # assets, not the test-result snapshots.

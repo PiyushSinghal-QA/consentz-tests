@@ -17,14 +17,12 @@ function todayAt(hour: number, minute: number): string {
   return `${dd}-${mm}-${yyyy} ${hh}:${mn}`;
 }
 
-test.skip(
+test(
   'booking notes are saved and persist on the appointment record',
-  // SKIPPED 2026-05-11: failed twice with the modal staying open after
-  // save. May be a side-effect of filling the textarea (form-state /
-  // hidden-tab issue) or an after-hours timing collision in the
-  // earlier run. Needs a follow-up probe of the booking modal's tab
-  // structure (does it have tabs like the patient form?). Tracked in
-  // PENDING-ITEMS; un-skip once the cause is pinned.
+  // Was previously skipped (2026-05-11) due to the modal staying open
+  // after save. Re-enabled per "no skips" directive — if it fails, the
+  // failure surfaces in the dashboard and we investigate the modal's
+  // tab structure / after-hours timing collision.
   async ({
   page,
   trackedMarkers,

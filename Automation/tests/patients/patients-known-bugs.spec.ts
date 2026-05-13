@@ -2,11 +2,9 @@ import { test, expect } from '@playwright/test';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { PatientsPage } from '../../pages/patients/PatientsPage';
 
-// Tracked-bug tests. Kept skipped via `test.skip(...)` so they don't fail
-// the suite, but stay in source so:
-//   1. We don't forget them.
-//   2. The test starts passing automatically the moment the bug is fixed —
-//      a built-in tripwire. Un-skip when you fix the underlying issue.
+// Tracked-bug tripwires. `test.fail()` keeps the suite green while the
+// bug exists; the moment it's fixed, the assertions pass and Playwright
+// flips the test red — un-mark and convert to a regression test.
 
 /** dd-mm-yyyy of N months ago (the age-calc handler runs on blur of #patient_birthday). */
 function dobMonthsAgo(months: number): string {
@@ -17,8 +15,8 @@ function dobMonthsAgo(months: number): string {
   return `${dd}-${mm}-${d.getFullYear()}`;
 }
 
-test.skip(
-  '[KNOWN BUG] age label is not shown for patients under 1 year old',
+test.fail(
+  '[K25] age label should show months for patients under 1 year old',
   async ({ page }) => {
     test.setTimeout(3 * 60 * 1000);
 
@@ -47,8 +45,8 @@ test.skip(
   },
 );
 
-test.skip(
-  '[KNOWN BUG] age label drops the months component (1y 3m shows as just "Age 1")',
+test.fail(
+  '[K26] age label should include the months component (1y 3m must not show as "Age 1")',
   async ({ page }) => {
     test.setTimeout(3 * 60 * 1000);
 
@@ -76,8 +74,8 @@ test.skip(
   },
 );
 
-test.skip(
-  '[KNOWN BUG] future DOB is silently accepted instead of being rejected',
+test.fail(
+  '[K27] future DOB should be rejected, not silently accepted',
   async ({ page }) => {
     test.setTimeout(3 * 60 * 1000);
 
@@ -110,8 +108,8 @@ test.skip(
   },
 );
 
-test.skip(
-  '[KNOWN BUG] DOB before 1900 is silently accepted instead of being rejected',
+test.fail(
+  '[K28] DOB before 1900 should be rejected, not silently accepted',
   async ({ page }) => {
     test.setTimeout(3 * 60 * 1000);
 

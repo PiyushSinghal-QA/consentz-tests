@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Run every 12 hours (00:00 and 12:00 UTC) so the dashboard reflects
+    # the current state of staging without needing a manual push.
+    - cron: '0 */12 * * *'
 
 permissions:
   contents: read
@@ -38,21 +42,27 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Fetch previous dashboard run (for trend deltas)
-        # GitHub Pages serves dashboard/data/results.json from the prior
-        # deployment. Save it locally so build-dashboard-data.js can include
-        # last run's pass/fail + bug counts in the new payload. First-ever
-        # run on a fresh Pages site will 404 — that's fine, the build script
-        # tolerates a missing snapshot.
+      - name: Fetch previous dashboard run + trend (for cross-run history)
+        # GitHub Pages serves the prior deployment's data files. We pull
+        # both results.json (used for the previous-run snapshot in the
+        # payload) and trend.json (so the time-series persists across
+        # otherwise-fresh CI checkouts — dashboard/data/ is gitignored,
+        # which means archive history dies between runs without this).
+        # First-ever run on a fresh Pages site will 404 on both — that's
+        # fine, the build script tolerates missing inputs.
         continue-on-error: true
         run: |
           REPO_OWNER="${GITHUB_REPOSITORY%%/*}"
           REPO_NAME="${GITHUB_REPOSITORY#*/}"
-          PREV_URL="https://${REPO_OWNER}.github.io/${REPO_NAME}/data/results.json"
-          echo "Fetching ${PREV_URL}"
-          curl -fsSL "${PREV_URL}" -o .previous-results.json && \
-            echo "Got previous snapshot ($(wc -c < .previous-results.json) bytes)" || \
-            echo "No previous snapshot — first run or 404"
+          BASE="https://${REPO_OWNER}.github.io/${REPO_NAME}"
+          echo "Fetching ${BASE}/data/results.json"
+          curl -fsSL "${BASE}/data/results.json" -o .previous-results.json && \
+            echo "  got previous-results ($(wc -c < .previous-results.json) bytes)" || \
+            echo "  no previous-results — first run or 404"
+          echo "Fetching ${BASE}/data/trend.json"
+          curl -fsSL "${BASE}/data/trend.json" -o .previous-trend.json && \
+            echo "  got previous-trend ($(wc -c < .previous-trend.json) bytes)" || \
+            echo "  no previous-trend — first run or 404"
 
       - name: Run test suite
         env:

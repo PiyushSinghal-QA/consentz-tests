@@ -30,11 +30,18 @@ const TREND_OUT = path.join(ROOT, 'dashboard/data/trend.json');
 const ARCHIVE_DIR = path.join(ROOT, 'dashboard/data/history');
 const SCREENSHOTS_DIR = path.join(ROOT, 'dashboard/data/screenshots');
 const TREND_MAX_POINTS = 30;
-// In CI, the previous run is downloaded from GH Pages into this file before
-// the build script runs (see .github/workflows/dashboard.yml). When present,
-// it's the cross-run "previous"; otherwise we fall back to whatever is in
-// dashboard/data/results.json (works locally where the file persists).
+// In CI, the previous run + previous trend are downloaded from GH Pages
+// before the build script runs (see .github/workflows/dashboard.yml).
+// When present, those are the cross-run history; otherwise we fall back
+// to local files (works locally where they persist).
 const PREV_FROM_CI = path.join(ROOT, 'Automation/.previous-results.json');
+const PREV_TREND_FROM_CI = path.join(ROOT, 'Automation/.previous-trend.json');
+
+// Health-formula weights: bug load contributes 60%, test pass rate 40%.
+// Modules with zero tests AND zero bugs are N/A (excluded from the overall
+// average) — they carry no signal so we don't pretend they're healthy.
+const HEALTH_BUG_WEIGHT = 0.6;
+const HEALTH_PASS_WEIGHT = 0.4;
 
 // ---- Helpers -----------------------------------------------------------
 
@@ -70,6 +77,23 @@ function cap(s) {
 
 function stripAnsi(s) {
   return s.replace(/\[[0-9;]*[a-zA-Z]/g, '');
+}
+
+/** Blended per-module health: 60% bug-load score + 40% test pass rate.
+ *  Returns null (N/A) when the module has 0 tests AND 0 bugs — no signal. */
+function computeModuleHealth(bugs, pass, total, weights) {
+  const hasTests = total > 0;
+  const hasBugs = bugs.length > 0;
+  if (!hasTests && !hasBugs) return null;
+
+  const deduction = bugs.reduce((s, b) => s + (weights[b.severity] || 0), 0);
+  const bugScore = Math.max(0, 100 - deduction);
+
+  // When a module has bugs but no tests run, fall back to pure bug score.
+  if (!hasTests) return Math.round(bugScore);
+
+  const passRate = (pass / total) * 100;
+  return Math.round(HEALTH_BUG_WEIGHT * bugScore + HEALTH_PASS_WEIGHT * passRate);
 }
 
 function safeFilename(s) {
@@ -227,17 +251,20 @@ function main() {
     const pass = m.tests.filter((t) => t.status === 'passed').length;
     const fail = m.tests.filter((t) => t.status === 'failed').length;
     const skipped = m.tests.filter((t) => t.status === 'skipped').length;
+    const total = m.tests.length;
     const bugs = Object.entries(severity.bugs)
       .filter(([, b]) => b.module === m.name)
       .map(([id, b]) => ({ id, ...b }));
+    const health = computeModuleHealth(bugs, pass, total, severity.weights);
     return {
       name: m.name,
       pass,
       fail,
       skipped,
-      total: m.tests.length,
+      total,
       tests: m.tests,
       bugs,
+      health, // null when N/A (no tests + no bugs)
     };
   });
   modules.sort((a, b) => {
@@ -249,7 +276,12 @@ function main() {
     return ai - bi;
   });
 
-  // 8. Overall stats
+  // 8. Overall stats — health is the average of non-N/A module scores so
+  //    modules with no signal don't dilute the number.
+  const ratedScores = modules.map((m) => m.health).filter((h) => h !== null);
+  const overallHealth = ratedScores.length
+    ? Math.round(ratedScores.reduce((a, b) => a + b, 0) / ratedScores.length)
+    : null;
   const overall = {
     pass: tests.filter((t) => t.status === 'passed').length,
     fail: tests.filter((t) => t.status === 'failed').length,
@@ -258,9 +290,27 @@ function main() {
     durationMs: tests.reduce((s, t) => s + (t.durationMs || 0), 0),
     runStarted: pwRaw.stats?.startTime || null,
     runDuration: pwRaw.stats?.duration || null,
+    health: overallHealth,
+    ratedModulesCount: ratedScores.length, // how many modules had signal
   };
 
-  // 9. Emit
+  // 9. Detect tripwires that fired — a K-bug's `test.fail()` test that
+  //    UNEXPECTEDLY PASSED (Playwright records this as status=failed with
+  //    a message like "Expected to fail, but passed"). When the assertions
+  //    succeed, the underlying bug is probably fixed. Mark the bug so the
+  //    dashboard can surface a "🎉 may be fixed" badge for human review.
+  const tripwireFiredBugIds = new Set();
+  for (const t of tests) {
+    if (t.status !== 'failed') continue;
+    const blob = (t.errors || []).join('\n');
+    if (!/expected to fail.*passed|expected.*pass.*to fail/i.test(blob)) continue;
+    // Match this test back to its K-bug via testName + file
+    for (const [id, b] of Object.entries(severity.bugs)) {
+      if (b.testName && b.testName === t.title) { tripwireFiredBugIds.add(id); break; }
+    }
+  }
+
+  // 10. Emit
   const payload = {
     generatedAt: new Date().toISOString(),
     severityConfig: {
@@ -269,9 +319,18 @@ function main() {
     },
     overall,
     modules,
-    bugs: Object.entries(severity.bugs).map(([id, b]) => ({ id, ...b })),
+    bugs: Object.entries(severity.bugs).map(([id, b]) => ({
+      id,
+      ...b,
+      tripwireFired: tripwireFiredBugIds.has(id),
+    })),
     previous: previous ? { generatedAt: previous.generatedAt, overall: previous.overall, bugs: previous.bugs } : null,
   };
+  // Mirror the flag into each module's bugs list too so the module card
+  // can show a fixed-count.
+  for (const m of payload.modules) {
+    for (const b of m.bugs) b.tripwireFired = tripwireFiredBugIds.has(b.id);
+  }
 
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(payload, null, 2));
@@ -281,58 +340,70 @@ function main() {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   fs.writeFileSync(path.join(ARCHIVE_DIR, `${stamp}.json`), JSON.stringify(payload, null, 2));
 
-  // 11. Aggregate the archive into a compact time-series for the trend chart.
-  //     Last TREND_MAX_POINTS snapshots, oldest → newest. Each point is a
-  //     small object (no per-test detail) so the JSON stays tiny.
-  const trend = buildTrendSeries(severity.weights);
+  // 11. Persist the trend series across runs by reading the prior trend.json
+  //     (downloaded from GH Pages in CI; local file otherwise), appending
+  //     the current run as a new point, and slicing the last TREND_MAX_POINTS.
+  //     This is needed because `dashboard/data/history/*.json` is gitignored
+  //     and the CI checkout doesn't see prior history.
+  const trend = appendToTrend(payload);
   fs.writeFileSync(TREND_OUT, JSON.stringify(trend, null, 2));
 
   const screenshotCount = fs.existsSync(SCREENSHOTS_DIR) ? fs.readdirSync(SCREENSHOTS_DIR).length : 0;
   console.log(`[dashboard] Wrote ${OUT}`);
   console.log(`[dashboard] Tests: ${overall.pass}/${overall.total} passed, ${overall.fail} failed, ${overall.skipped} skipped`);
-  console.log(`[dashboard] Modules: ${modules.map((m) => `${m.name}(${m.pass}/${m.total})`).join(', ')}`);
+  console.log(`[dashboard] Modules: ${modules.map((m) => `${m.name}(${m.pass}/${m.total}, h=${m.health === null ? 'N/A' : m.health})`).join(', ')}`);
+  console.log(`[dashboard] Overall health: ${overall.health === null ? 'N/A' : overall.health} (avg of ${overall.ratedModulesCount} rated modules)`);
   console.log(`[dashboard] Bugs: ${payload.bugs.length} across ${new Set(payload.bugs.map((b) => b.module)).size} modules`);
   console.log(`[dashboard] Screenshots copied: ${screenshotCount}`);
   console.log(`[dashboard] Previous-run snapshot: ${previous ? `present (from ${previous.generatedAt})` : 'none'}`);
   console.log(`[dashboard] Trend points: ${trend.points.length} (last ${TREND_MAX_POINTS})`);
+  console.log(`[dashboard] Tripwires fired (bug may be fixed): ${tripwireFiredBugIds.size > 0 ? [...tripwireFiredBugIds].join(', ') : 'none'}`);
 }
 
-function buildTrendSeries(weights) {
-  if (!fs.existsSync(ARCHIVE_DIR)) return { points: [] };
-  const files = fs.readdirSync(ARCHIVE_DIR)
-    .filter((f) => f.endsWith('.json'))
-    .sort()
-    .slice(-TREND_MAX_POINTS);
-
-  const points = [];
-  for (const f of files) {
+function appendToTrend(payload) {
+  // Load prior trend: prefer CI-downloaded, then local. If neither exists,
+  // start fresh.
+  let prior = { points: [] };
+  for (const src of [PREV_TREND_FROM_CI, TREND_OUT]) {
+    if (!fs.existsSync(src)) continue;
     try {
-      const data = JSON.parse(fs.readFileSync(path.join(ARCHIVE_DIR, f), 'utf8'));
-      const bugCounts = { critical: 0, major: 0, minor: 0 };
-      for (const b of data.bugs || []) bugCounts[b.severity] = (bugCounts[b.severity] || 0) + 1;
-      const health = Math.max(
-        0,
-        100 - ((bugCounts.critical || 0) * (weights.critical ?? 25) +
-               (bugCounts.major    || 0) * (weights.major    ?? 10) +
-               (bugCounts.minor    || 0) * (weights.minor    ?? 3)),
-      );
-      const overall = data.overall || { pass: 0, fail: 0, skipped: 0, total: 0 };
-      const passRate = overall.total ? Math.round((overall.pass / overall.total) * 100) : 0;
-      points.push({
-        generatedAt: data.generatedAt,
-        health,
-        pass: overall.pass,
-        fail: overall.fail,
-        skipped: overall.skipped,
-        total: overall.total,
-        passRate,
-        bugs: { total: (data.bugs || []).length, ...bugCounts },
-      });
+      const data = JSON.parse(fs.readFileSync(src, 'utf8'));
+      if (Array.isArray(data.points)) { prior = data; break; }
     } catch (e) {
-      console.warn(`[dashboard] skipped bad history file ${f}: ${e.message}`);
+      console.warn(`[dashboard] could not parse prior trend at ${src}: ${e.message}`);
     }
   }
-  return { points };
+
+  // Build the current run's point
+  const bugCounts = { critical: 0, major: 0, minor: 0 };
+  for (const b of payload.bugs || []) bugCounts[b.severity] = (bugCounts[b.severity] || 0) + 1;
+  const overall = payload.overall || {};
+  const passRate = overall.total ? Math.round((overall.pass / overall.total) * 100) : 0;
+  const point = {
+    generatedAt: payload.generatedAt,
+    health: overall.health,
+    pass: overall.pass || 0,
+    fail: overall.fail || 0,
+    skipped: overall.skipped || 0,
+    total: overall.total || 0,
+    passRate,
+    bugs: { total: (payload.bugs || []).length, ...bugCounts },
+  };
+
+  // Append, then dedupe by generatedAt (in case the build runs twice with
+  // the same timestamp), then keep the last TREND_MAX_POINTS sorted by time.
+  const seen = new Set();
+  const merged = [...prior.points, point]
+    .filter((p) => p && p.generatedAt)
+    .filter((p) => {
+      if (seen.has(p.generatedAt)) return false;
+      seen.add(p.generatedAt);
+      return true;
+    })
+    .sort((a, b) => a.generatedAt.localeCompare(b.generatedAt))
+    .slice(-TREND_MAX_POINTS);
+
+  return { points: merged };
 }
 
 main();

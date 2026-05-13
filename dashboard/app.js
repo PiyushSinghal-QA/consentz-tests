@@ -4,6 +4,13 @@
 
 const LS_KEY = 'consentz.dashboard.severityOverrides';
 const SEVERITY_VALUES = ['critical', 'major', 'minor'];
+const SEVERITY_RANK = { critical: 3, major: 2, minor: 1 };
+
+// Blended health weights mirrored from build-dashboard-data.js so the
+// client-side recompute (which honors localStorage overrides) matches the
+// server-side number stored in payload.overall.health.
+const HEALTH_BUG_WEIGHT = 0.6;
+const HEALTH_PASS_WEIGHT = 0.4;
 
 let state = {
   data: null,
@@ -14,19 +21,59 @@ let state = {
 
 // ---- Boot --------------------------------------------------------------
 
+// Live-update poll interval. Cron runs every 12 hours; polling every 5 min
+// when the tab is visible catches fresh CI runs within minutes of deploy.
+const POLL_INTERVAL_MS = 5 * 60 * 1000;
+
 (async function init() {
   state.overrides = loadOverrides();
   try {
-    state.data = await fetchJson('data/results.json');
+    state.data = await fetchJson(cacheBust('data/results.json'));
   } catch (e) {
     showError(`Could not load data/results.json (${e.message}). Run \`node tools/build-dashboard-data.js\` first.`);
     return;
   }
   // trend.json is optional — first-ever run won't have it
-  state.trend = await fetchJson('data/trend.json').catch(() => ({ points: [] }));
+  state.trend = await fetchJson(cacheBust('data/trend.json')).catch(() => ({ points: [] }));
   bindControls();
   render();
+  startLivePolling();
 })();
+
+function cacheBust(url) {
+  // Force a fresh fetch each poll — GH Pages aggressively caches data/*.json.
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}t=${Date.now()}`;
+}
+
+// Polls for a fresh results.json. If generatedAt changes, re-render.
+function startLivePolling() {
+  let polling = false;
+  setInterval(async () => {
+    if (document.hidden || polling) return;
+    polling = true;
+    try {
+      const fresh = await fetchJson(cacheBust('data/results.json'));
+      if (fresh.generatedAt && fresh.generatedAt !== state.data.generatedAt) {
+        state.data = fresh;
+        state.trend = await fetchJson(cacheBust('data/trend.json')).catch(() => ({ points: [] }));
+        flashLiveUpdate();
+        render();
+      }
+    } catch {
+      // Network blip — silent. Next poll will retry.
+    } finally {
+      polling = false;
+    }
+  }, POLL_INTERVAL_MS);
+}
+
+function flashLiveUpdate() {
+  const stamp = document.getElementById('generated-at');
+  if (!stamp) return;
+  stamp.classList.add('live-update-flash');
+  setTimeout(() => stamp.classList.remove('live-update-flash'), 2_500);
+}
 
 function fetchJson(url) {
   return fetch(url).then((r) => {
@@ -59,7 +106,8 @@ function severityFor(bug) {
 
 // ---- Health math -------------------------------------------------------
 
-function healthScore(bugList, weights) {
+/** Pure bug-load score: 100 minus weighted severity sum, clamped to 0. */
+function bugScore(bugList, weights) {
   let deduction = 0;
   for (const b of bugList) {
     const sev = severityFor(b);
@@ -68,7 +116,21 @@ function healthScore(bugList, weights) {
   return Math.max(0, 100 - deduction);
 }
 
+/** Blended per-module health: 60% bug load + 40% pass rate.
+ *  Returns null (N/A) when total tests = 0 AND total bugs = 0 — no signal. */
+function moduleHealth(m, weights) {
+  const hasTests = (m.total || 0) > 0;
+  const hasBugs = (m.bugs || []).length > 0;
+  if (!hasTests && !hasBugs) return null;
+
+  const bs = bugScore(m.bugs, weights);
+  if (!hasTests) return Math.round(bs);
+  const passRate = (m.pass / m.total) * 100;
+  return Math.round(HEALTH_BUG_WEIGHT * bs + HEALTH_PASS_WEIGHT * passRate);
+}
+
 function healthClass(score, thresholds) {
+  if (score === null) return 'health-na';
   if (score >= thresholds.green) return 'health-green';
   if (score >= thresholds.yellow) return 'health-yellow';
   return 'health-red';
@@ -95,18 +157,30 @@ function render() {
   document.getElementById('overall-skipped').textContent = d.overall.skipped;
   document.getElementById('overall-total').textContent = d.overall.total;
 
-  // Overall health = aggregate over ALL bugs
-  const overallScore = healthScore(d.bugs, weights);
+  // Overall health = average of per-module health scores. Modules with
+  // no tests AND no bugs are N/A (excluded from the average) so empty
+  // modules don't dilute the number toward 100. Client recomputes using
+  // localStorage overrides; the canonical (override-free) value is in
+  // payload.overall.health.
+  const moduleScoresWithNA = d.modules.map((m) => moduleHealth(m, weights));
+  const rated = moduleScoresWithNA.filter((s) => s !== null);
+  const overallScore = rated.length
+    ? Math.round(rated.reduce((a, b) => a + b, 0) / rated.length)
+    : null;
   const ring = document.getElementById('overall-health-ring');
   const cls = healthClass(overallScore, thresholds);
-  ring.classList.remove('health-green', 'health-yellow', 'health-red');
+  ring.classList.remove('health-green', 'health-yellow', 'health-red', 'health-na');
   ring.classList.add(cls);
-  document.getElementById('overall-health-score').textContent = overallScore;
+  document.getElementById('overall-health-score').textContent = overallScore === null ? 'N/A' : overallScore;
 
   // Color the ring's conic-gradient (visual fill)
-  const color = cls === 'health-green' ? '#10b981' : cls === 'health-yellow' ? '#f59e0b' : '#ef4444';
-  const pct = overallScore;
-  ring.style.background = `conic-gradient(${color} ${pct * 3.6}deg, var(--border) ${pct * 3.6}deg)`;
+  if (overallScore === null) {
+    ring.style.background = 'conic-gradient(var(--border) 0deg, var(--border) 360deg)';
+  } else {
+    const color = cls === 'health-green' ? '#10b981' : cls === 'health-yellow' ? '#f59e0b' : '#ef4444';
+    const pct = overallScore;
+    ring.style.background = `conic-gradient(${color} ${pct * 3.6}deg, var(--border) ${pct * 3.6}deg)`;
+  }
 
   // Trend section: 4 pies (prev vs current × tests + bugs)
   renderTrendCharts(d);
@@ -236,21 +310,23 @@ function renderModules(modules, weights, thresholds) {
   grid.innerHTML = '';
 
   for (const m of modules) {
-    const score = healthScore(m.bugs, weights);
+    const score = moduleHealth(m, weights);
+    const isNA = score === null;
     const cls = healthClass(score, thresholds);
     const counts = { critical: 0, major: 0, minor: 0 };
     for (const b of m.bugs) counts[severityFor(b)] = (counts[severityFor(b)] || 0) + 1;
     const unverified = m.bugs.filter((b) => b.unverified).length;
     const automated = m.bugs.filter((b) => b.test).length;
+    const mayBeFixed = m.bugs.filter((b) => b.tripwireFired).length;
 
     const card = document.createElement('div');
     card.className = `module-card ${cls}`;
     card.innerHTML = `
       <h3>
         <span>${escapeHtml(m.name)}</span>
-        <span class="health">${score}</span>
+        <span class="health" title="${isNA ? 'No tests + no bugs — module is unrated' : ''}">${isNA ? 'N/A' : score}</span>
       </h3>
-      <div class="bar"><div style="width:${score}%"></div></div>
+      <div class="bar"><div style="width:${isNA ? 0 : score}%"></div></div>
       <div class="module-stats">
         <span>${m.pass}/${m.total} passing</span>
         ${m.fail ? `<span style="color:var(--red)">${m.fail} failed</span>` : ''}
@@ -260,11 +336,12 @@ function renderModules(modules, weights, thresholds) {
         ${counts.critical ? `<span class="badge critical">${counts.critical} critical</span>` : ''}
         ${counts.major ? `<span class="badge major">${counts.major} major</span>` : ''}
         ${counts.minor ? `<span class="badge minor">${counts.minor} minor</span>` : ''}
-        ${m.bugs.length === 0 ? `<span style="color:var(--text-muted);font-size:13px">No tracked defects</span>` : ''}
+        ${m.bugs.length === 0 ? `<span style="color:var(--text-muted);font-size:13px">${isNA ? 'Unrated — no tests yet' : 'No tracked defects'}</span>` : ''}
       </div>
       ${m.bugs.length ? `<div class="module-stats" style="margin-top:6px;font-size:12px;color:var(--text-muted)">
         <span title="Bugs with an automated tripwire test">${automated}/${m.bugs.length} automated</span>
         ${unverified ? `<span class="badge unverified" title="Original report needs reproduction on current build">${unverified} unverified</span>` : ''}
+        ${mayBeFixed ? `<span class="badge tripwire-fired" title="Tripwire fired — these bugs may be fixed">🎉 ${mayBeFixed} may be fixed</span>` : ''}
       </div>` : ''}
     `;
     grid.appendChild(card);
@@ -289,6 +366,10 @@ function renderBugs(bugs) {
   const fSev = document.getElementById('filter-severity').value;
   tbody.innerHTML = '';
 
+  // Build a lookup of previous-run bugs so we can show what changed.
+  const prevById = {};
+  for (const b of (state.data?.previous?.bugs || [])) prevById[b.id] = b;
+
   const filtered = bugs.filter((b) => {
     if (fMod && b.module !== fMod) return false;
     if (fSev && severityFor(b) !== fSev) return false;
@@ -310,8 +391,9 @@ function renderBugs(bugs) {
     tr.innerHTML = `
       <td><span class="bug-id">${b.id}</span></td>
       <td>${escapeHtml(b.module)}</td>
-      <td>${escapeHtml(b.title)}${b.unverified ? ' <span class="badge unverified" title="Original report needs reproduction on the current build">unverified</span>' : ''}</td>
+      <td>${escapeHtml(b.title)}${b.unverified ? ' <span class="badge unverified" title="Original report needs reproduction on the current build">unverified</span>' : ''}${fixedBadge(b)}</td>
       <td>${coverageBadge(b)}</td>
+      <td>${improvementCell(b, prevById)}</td>
       <td>
         <select class="severity-select ${sev}" data-bug="${b.id}">
           ${SEVERITY_VALUES.map((v) => `<option value="${v}"${v === sev ? ' selected' : ''}>${cap(v)}</option>`).join('')}
@@ -333,12 +415,53 @@ function renderBugs(bugs) {
 
 function coverageBadge(bug) {
   if (bug.test) {
-    return `<span class="badge coverage-auto" title="Tripwire test: ${escapeHtml(bug.test)}">🤖 automated</span>`;
+    // Hover shows the specific test title (testName) when available so
+    // a failure on the dashboard can be traced back to a bug at a glance.
+    const tip = bug.testName ? `${bug.testName}\n— ${bug.test}` : bug.test;
+    return `<span class="badge coverage-auto" title="${escapeHtml(tip)}">🤖 automated</span>`;
   }
   if (bug.manualTC) {
     return `<span class="badge coverage-manual" title="Manual TC: ${escapeHtml(bug.manualTC)}">📝 manual TC</span>`;
   }
   return `<span class="badge coverage-none" title="No test maps to this defect yet">⚠ no test</span>`;
+}
+
+function fixedBadge(bug) {
+  if (!bug.tripwireFired) return '';
+  return `<span class="badge tripwire-fired" title="The tripwire test passed (unexpected). The underlying bug may be fixed — investigate and, if confirmed, drop this bug from BUGS.md + bug-severity.json.">🎉 may be fixed</span>`;
+}
+
+/** Improvement column: per-bug change indicator vs the previous run.
+ *  Priority order (only one indicator shown):
+ *   - 🎉 may be fixed (tripwire passed unexpectedly this run)
+ *   - ⬇ severity downgraded
+ *   - ⬆ severity upgraded
+ *   - ✨ new (not in previous run)
+ *   - — no change */
+function improvementCell(bug, prevById) {
+  if (bug.tripwireFired) {
+    return `<span class="improvement improvement-fixed" title="Tripwire fired — investigate fix">🎉 may be fixed</span>`;
+  }
+  const prev = prevById[bug.id];
+  if (!prev) {
+    // No prior data OR a brand-new bug — distinguish by checking if we
+    // have any previous data at all.
+    if (Object.keys(prevById).length === 0) {
+      return `<span class="improvement improvement-na" title="No previous run snapshot to compare against">—</span>`;
+    }
+    return `<span class="improvement improvement-new" title="New since the previous run">✨ new</span>`;
+  }
+  const curSev = severityFor(bug);
+  const prevSev = prev.severity;
+  const curRank = SEVERITY_RANK[curSev] || 0;
+  const prevRank = SEVERITY_RANK[prevSev] || 0;
+  if (curRank < prevRank) {
+    return `<span class="improvement improvement-down" title="Severity downgraded from ${prevSev} to ${curSev}">⬇ ${prevSev} → ${curSev}</span>`;
+  }
+  if (curRank > prevRank) {
+    return `<span class="improvement improvement-up" title="Severity upgraded from ${prevSev} to ${curSev}">⬆ ${prevSev} → ${curSev}</span>`;
+  }
+  return `<span class="improvement improvement-flat" title="No change since previous run">—</span>`;
 }
 
 // ---- Health-over-time line chart ---------------------------------------
@@ -524,13 +647,14 @@ function openBugDetail(bug) {
   const body = document.getElementById('bug-detail-body');
   const sev = severityFor(bug);
   body.innerHTML = `
-    <h3><span class="bug-id">${bug.id}</span> <span class="badge ${sev}">${sev}</span>${bug.unverified ? ' <span class="badge unverified">unverified</span>' : ''}</h3>
+    <h3><span class="bug-id">${bug.id}</span> <span class="badge ${sev}">${sev}</span>${bug.unverified ? ' <span class="badge unverified">unverified</span>' : ''}${bug.tripwireFired ? ' <span class="badge tripwire-fired">🎉 may be fixed</span>' : ''}</h3>
     <p>${escapeHtml(bug.title)}</p>
     <dl>
       <dt>Module</dt><dd>${escapeHtml(bug.module)}</dd>
       <dt>Default severity</dt><dd>${escapeHtml(bug.severity)}</dd>
       <dt>Effective severity</dt><dd>${escapeHtml(sev)}${state.overrides[bug.id] ? ' <em>(overridden in this browser)</em>' : ''}</dd>
       <dt>Automated tripwire</dt><dd>${bug.test ? `<code>${escapeHtml(bug.test)}</code>` : '<em>none yet — defect has no automated coverage</em>'}</dd>
+      ${bug.testName ? `<dt>Test name</dt><dd><code>${escapeHtml(bug.testName)}</code></dd>` : ''}
       <dt>Manual TC</dt><dd>${bug.manualTC ? `<code>${escapeHtml(bug.manualTC)}</code>` : '<em>none</em>'}</dd>
     </dl>
     <p style="margin-top:16px;font-size:13px;color:var(--text-muted)">Full description, repro steps, and surfacing test live in <code>BUGS.md</code>.</p>

@@ -4,9 +4,10 @@ import { PatientsPage } from '../../pages/patients/PatientsPage';
 import { CalendarPage } from '../../pages/calendar/CalendarPage';
 import { DEMO_USER } from '../../test-data/users';
 
-// Calendar-side tracked-bug tests. Same pattern as patients-known-bugs:
-// kept as `test.skip` so they don't fail the suite, but stay in source
-// so they fire as tripwires the moment the underlying bug is fixed.
+// Calendar-side tracked-bug tripwires. `test.fail()` keeps the suite
+// green while the bug exists; the moment it's fixed, Playwright flips
+// the test red — that's the tripwire signal to un-mark and turn this
+// into a regression test.
 
 /** Build a `DD-MM-YYYY HH:MM` string for today at the given hour:min. */
 function todayAt(hour: number, minute: number): string {
@@ -19,8 +20,8 @@ function todayAt(hour: number, minute: number): string {
   return `${dd}-${mm}-${yyyy} ${hh}:${mn}`;
 }
 
-test.skip(
-  '[KNOWN BUG] same practitioner + patient + time can be double-booked',
+test.fail(
+  '[K24] same practitioner + patient + time should not be double-bookable',
   async ({ page, trackedMarkers }) => {
     test.setTimeout(7 * 60 * 1000);
 
