@@ -7,7 +7,7 @@
     "test:headed": "npx playwright test --headed",
     "test:ui": "npx playwright test --ui",
     "test:report": "npx playwright show-report",
-    "test:tripwires": "npx playwright test --project=chromium tests/auth/login.spec.ts tests/auth/login-known-bugs.spec.ts tests/dashboard/dashboard.spec.ts tests/dashboard/dashboard-known-bugs.spec.ts tests/patients/patients-boundary.spec.ts tests/patients/patients-security.spec.ts tests/logs/logs-known-bugs.spec.ts tests/setup/setup-known-bugs.spec.ts tests/marketing/marketing-known-bugs.spec.ts tests/report/report-known-bugs.spec.ts",
+    "test:tripwires": "npx playwright test --project=chromium tests/auth/login.spec.ts tests/auth/login-known-bugs.spec.ts tests/dashboard/dashboard.spec.ts tests/dashboard/dashboard-known-bugs.spec.ts tests/patients/patients-boundary.spec.ts tests/patients/patients-security.spec.ts tests/logs/logs-known-bugs.spec.ts tests/setup/setup-known-bugs.spec.ts tests/marketing/marketing-known-bugs.spec.ts tests/report/report-known-bugs.spec.ts tests/settings/settings-known-bugs.spec.ts",
     "dashboard": "node ../tools/build-dashboard-data.js",
     "dashboard:serve": "node ../tools/serve-dashboard.js"
   },

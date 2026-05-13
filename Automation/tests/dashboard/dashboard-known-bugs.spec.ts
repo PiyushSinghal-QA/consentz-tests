@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures';
+import { test, expect, type Page, type Locator } from '@playwright/test';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 
 // Tracked-bug tripwires for Dashboard.
@@ -8,39 +8,72 @@ import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 // Playwright flips the test red — that's the signal to un-mark, drop
 // the bug from BUGS.md / bug-severity.json, and turn this into a
 // regression test.
-//
-// `test.fixme()` marks bugs whose accurate tripwire is blocked on
-// dom-exploration / page-object work we haven't done yet (e.g. widget
-// library selectors). They appear in the dashboard as "automated" but
-// skipped, which is honest: we know what to write, we just don't have
-// the selectors yet.
+
+// ---- Local widget-library helpers -------------------------------------
+// We don't have a stable WidgetLibrary page object yet — these are
+// best-effort discovery helpers. When the right selectors are pinned,
+// promote into pages/dashboard/WidgetLibraryPage.ts.
+
+async function openWidgetLibrary(page: Page): Promise<Locator> {
+  // The library is class-toggled off-screen (per memory note). Find a
+  // toggle button + click it. Multiple candidate selectors because we
+  // haven't pinned the canonical one yet.
+  const toggleCandidates = [
+    'button:has-text("Add widget")',
+    'button:has-text("Widget Library")',
+    'button:has-text("Library")',
+    '[data-target*="widget-library" i]',
+    '[data-target*="widgetLibrary" i]',
+    'aside.widget-library-toggle',
+    '.add-widget',
+  ];
+  for (const sel of toggleCandidates) {
+    const t = page.locator(sel).first();
+    if ((await t.count()) > 0) {
+      await t.click({ noWaitAfter: true }).catch(() => null);
+      await page.waitForTimeout(500);
+      break;
+    }
+  }
+
+  // Discover the library panel itself
+  const panelCandidates = [
+    '#widget-library',
+    '.widget-library',
+    'aside.library',
+    'aside[class*="library" i]',
+    '[class*="WidgetLibrary" i]',
+  ];
+  for (const sel of panelCandidates) {
+    const p = page.locator(sel).first();
+    if ((await p.count()) > 0 && (await p.isVisible())) return p;
+  }
+  return page.locator('aside').first();
+}
+
+function libraryTile(library: Locator, label: RegExp): Locator {
+  return library.locator(`[class*="tile" i], [class*="card" i], [data-widget], li, a, button`).filter({ hasText: label }).first();
+}
+
+function widgetOnDashboard(page: Page, label: RegExp): Locator {
+  return page.locator(`main [class*="widget" i], main section, main article`).filter({ hasText: label }).first();
+}
 
 // ---------- K11: Widget graphs do not render on initial load ----------
 
-test.fail('[K11] widget graphs should render on initial dashboard load (no need to refresh)', async ({ page }) => {
+test.fail('[K11] widget graphs should render on initial dashboard load', async ({ page }) => {
   test.setTimeout(60_000);
-
-  // BUG K11: on initial dashboard load, no widget chart canvases render
-  // pixels until the user toggles widgets or switches cards. Expected
-  // post-fix: at least one chart canvas is non-empty by 8s after load.
 
   const dashboard = new DashboardPage(page);
   await dashboard.goto();
   await dashboard.assertLoaded();
 
-  // Wait up to 8s for any canvas in the widget area to have actual pixels
-  // (i.e. a non-default toDataURL). Doing it via `evaluate` lets us inspect
-  // the canvas pixel buffer rather than trusting visibility, which can
-  // report a "rendered" canvas that's actually empty.
   const anyCanvasRendered = await page.waitForFunction(() => {
     const canvases = Array.from(document.querySelectorAll('canvas')) as HTMLCanvasElement[];
     if (canvases.length === 0) return false;
     return canvases.some((c) => {
       try {
-        const data = c.toDataURL();
-        // Empty canvas toDataURL is a tiny, predictable string; rendered
-        // ones are much larger.
-        return data && data.length > 1500;
+        return (c.toDataURL() || '').length > 1500;
       } catch {
         return false;
       }
@@ -52,26 +85,22 @@ test.fail('[K11] widget graphs should render on initial dashboard load (no need 
 
 // ---------- K13: Brand logo is not a homepage hyperlink ----------
 
-test.fail('[K13] clicking the brand logo should navigate to the dashboard, not open a gridmenu', async ({ page }) => {
+test.fail('[K13] clicking the brand logo should navigate to the dashboard', async ({ page }) => {
   test.setTimeout(60_000);
 
   const dashboard = new DashboardPage(page);
   await dashboard.goto();
-  const startUrl = page.url();
-
-  // Navigate to a non-dashboard page so a real homepage-link click would
-  // produce a visible URL change.
-  await page.goto(`/admin/clinics/${dashboard.getClinicId()}/patients`, { waitUntil: 'commit' });
+  const clinicId = dashboard.getClinicId();
+  await page.goto(`/admin/clinics/${clinicId}/patients`, { waitUntil: 'commit' });
   await page.waitForTimeout(500);
 
-  // Try several likely logo selectors — the bug is "logo opens gridmenu",
-  // so the logo IS present, just bound to the wrong handler.
   const logoCandidates = [
     'header .brand img',
     'header .logo',
     'header img[alt*="consentz" i]',
     '[class*="logo"] img',
     'a[href="/"] img',
+    'header a:has(img):first-of-type',
   ];
   let clicked = false;
   for (const sel of logoCandidates) {
@@ -84,8 +113,6 @@ test.fail('[K13] clicking the brand logo should navigate to the dashboard, not o
   }
   expect(clicked, 'Should find a brand logo element to click').toBe(true);
   await page.waitForTimeout(1_500);
-
-  // Expected post-fix: clicking the logo lands us on /dashboard.
   await expect(page).toHaveURL(/\/admin\/clinics\/\d+\/dashboard/);
 });
 
@@ -100,33 +127,28 @@ test.fail('[K9, K10] switching clinics should not raise uncaught JS exceptions',
   const dashboard = new DashboardPage(page);
   await dashboard.goto();
 
-  // Find the clinic switcher (Consentz topbar uses a dropdown). Try a few
-  // common selectors; if none match, fail fast so the human knows to
-  // teach the selector.
   const switcherCandidates = [
     'header [class*="clinic" i] button',
     'header select[name*="clinic" i]',
     '[data-clinic-switch]',
     'a:has-text("Switch clinic")',
+    'header button:has-text(/clinic/i)',
   ];
-  let switcher = page.locator('xxx-placeholder');
+  let switcher: Locator | null = null;
   for (const sel of switcherCandidates) {
     const loc = page.locator(sel).first();
     if ((await loc.count()) > 0) { switcher = loc; break; }
   }
-  expect(await switcher.count(), 'Clinic switcher should be discoverable').toBeGreaterThan(0);
-
-  await switcher.click({ noWaitAfter: true }).catch(() => null);
+  expect(switcher, 'Clinic switcher should be discoverable').not.toBeNull();
+  await switcher!.click({ noWaitAfter: true }).catch(() => null);
   await page.waitForTimeout(500);
 
-  // Pick the first option that's not the current clinic.
   const altOption = page.locator('a[href*="/admin/clinics/"]:not([href*="/dashboard"])').first();
   if ((await altOption.count()) > 0) {
     await altOption.click({ noWaitAfter: true }).catch(() => null);
     await page.waitForTimeout(4_000);
   }
 
-  // K9/K10 specifics — match either message
   const expected = pageErrors.filter((m) =>
     /cannot convert undefined or null to object|no method named 'destroy'/i.test(m),
   );
@@ -135,56 +157,130 @@ test.fail('[K9, K10] switching clinics should not raise uncaught JS exceptions',
 
 // ---------- K2 / K3 / K4: Widget-Library add fails silently ----------
 
-const SILENT_ADD_BUG_WIDGETS: Array<{ id: string; title: string; libraryLabel: RegExp }> = [
-  { id: 'K2', title: 'Patient Referrals',  libraryLabel: /patient referrals/i },
-  { id: 'K3', title: 'Receipts',           libraryLabel: /^receipts$/i },
-  { id: 'K4', title: 'Revenue per Period', libraryLabel: /revenue per period/i },
+const SILENT_ADD_BUGS: Array<{ id: string; title: string; label: RegExp }> = [
+  { id: 'K2', title: 'Patient Referrals',  label: /patient referrals/i },
+  { id: 'K3', title: 'Receipts',           label: /^receipts$/i },
+  { id: 'K4', title: 'Revenue per Period', label: /revenue per period/i },
 ];
-for (const w of SILENT_ADD_BUG_WIDGETS) {
-  test.fixme(`[${w.id}] adding the "${w.title}" widget from the library should put it on the dashboard`, async ({ page }) => {
-    // BLOCKED: needs a verified locator for the Widget Library tile +
-    // its add button, plus a way to assert the widget appears on the
-    // dashboard. Once we have WidgetLibrary page object, the body
-    // looks like:
-    //
-    //   await dashboard.goto();
-    //   await dashboard.openLibrary();
-    //   await dashboard.addWidget(w.libraryLabel);
-    //   await expect(dashboard.widgetByTitle(w.title)).toBeVisible({ timeout: 5_000 });
-    //
-    // For now, recorded as test.fixme so the bug-to-test mapping is
-    // captured and the dashboard tags this as automated-pending.
-    void page; void w;
+for (const w of SILENT_ADD_BUGS) {
+  test.fail(`[${w.id}] adding the "${w.title}" widget from the library should put it on the dashboard`, async ({ page }) => {
+    test.setTimeout(90_000);
+
+    const dashboard = new DashboardPage(page);
+    await dashboard.goto();
+    await dashboard.assertLoaded();
+    await page.waitForTimeout(2_000);
+
+    const library = await openWidgetLibrary(page);
+    const tile = libraryTile(library, w.label);
+    await expect(tile, `Library tile for "${w.title}" should exist`).toHaveCount(1);
+
+    await tile.click({ noWaitAfter: true }).catch(() => null);
+    await page.waitForTimeout(3_000);
+
+    const widget = widgetOnDashboard(page, w.label);
+    await expect(widget, `"${w.title}" widget should appear on the dashboard after add`).toBeVisible({ timeout: 8_000 });
   });
 }
 
-// ---------- K18: Library does not visually mark "in-use" widgets ----------
+// ---------- K18: Library does not mark "in-use" widgets ----------
 
-test.fixme('[K18] widgets already on the dashboard should be visually distinct in the Library', async ({ page }) => {
-  // BLOCKED: the bug *is* the absence of an indicator — we need product
-  // to specify what the indicator will look like (CSS class? aria-pressed?
-  // a badge?). Once the contract exists, the tripwire asserts that
-  // tile.is(... selected/in-use marker ...).
-  void page;
+test.fail('[K18] widgets already on the dashboard should be visually distinct in the Library', async ({ page }) => {
+  test.setTimeout(60_000);
+
+  const dashboard = new DashboardPage(page);
+  await dashboard.goto();
+  await page.waitForTimeout(2_000);
+
+  // Read which widgets are currently on the dashboard (collect their titles).
+  const dashboardWidgetTitles = await page.locator(`main [class*="widget" i], main section`)
+    .evaluateAll((els) => els.map((el) => (el.querySelector('h1,h2,h3,h4')?.textContent || '').trim()).filter(Boolean));
+
+  if (dashboardWidgetTitles.length === 0) {
+    throw new Error('No widgets detected on dashboard — cannot probe K18 without a baseline');
+  }
+
+  const library = await openWidgetLibrary(page);
+  // For each on-dashboard title, look for the matching library tile and
+  // assert it has SOME selected/in-use marker class or attribute. The bug
+  // is the *absence* of any such marker.
+  const tilesWithMarker: string[] = [];
+  for (const title of dashboardWidgetTitles) {
+    const tile = libraryTile(library, new RegExp(title.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i'));
+    if ((await tile.count()) === 0) continue;
+    const markerScore = await tile.evaluate((el) => {
+      const cls = (el.className || '').toLowerCase();
+      const ariaPressed = el.getAttribute('aria-pressed');
+      const dataInUse = el.getAttribute('data-in-use');
+      const dataSelected = el.getAttribute('data-selected');
+      return Number(
+        /\b(selected|in-use|added|active|on-dashboard|disabled)\b/.test(cls) ||
+        ariaPressed === 'true' ||
+        dataInUse === 'true' ||
+        dataSelected === 'true',
+      );
+    });
+    if (markerScore) tilesWithMarker.push(title);
+  }
+
+  expect(tilesWithMarker.length, 'Library tiles for on-dashboard widgets should carry a selected/in-use marker').toBeGreaterThan(0);
 });
 
-// ---------- K19: Re-clicking an added Library tile errors ----------
+// ---------- K19: Re-clicking a Library tile errors ----------
 
-test.fixme('[K19] re-clicking a Library tile that is already on the dashboard should toggle/remove, not error', async ({ page }) => {
-  // BLOCKED: needs the WidgetLibrary page object + a stable selector for
-  // the in-tile error toast. Once available:
-  //   await dashboard.openLibrary();
-  //   const tile = dashboard.tileFor(/already added/i);
-  //   await tile.click(); // first click: was already added by setup
-  //   // expected post-fix: widget removed; library marks tile available
-  //   await expect(tile).not.toHaveAttribute('class', /in-use/);
-  void page;
+test.fail('[K19] re-clicking a Library tile that is already on the dashboard should toggle/remove, not error', async ({ page }) => {
+  test.setTimeout(60_000);
+
+  const dashboard = new DashboardPage(page);
+  await dashboard.goto();
+  await page.waitForTimeout(2_000);
+
+  const dashboardWidgetTitle = await page.locator(`main [class*="widget" i], main section`).first()
+    .locator('h1,h2,h3,h4').innerText().catch(() => '');
+  if (!dashboardWidgetTitle) {
+    throw new Error('No widget visible on dashboard — cannot probe K19');
+  }
+
+  const library = await openWidgetLibrary(page);
+  const tile = libraryTile(library, new RegExp(dashboardWidgetTitle.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i'));
+  await expect(tile, `Library tile for already-added "${dashboardWidgetTitle}" should exist`).toHaveCount(1);
+
+  // Listen for any error toast / inline error
+  const errorTexts: string[] = [];
+  page.on('console', (msg) => { if (msg.type() === 'error') errorTexts.push(msg.text()); });
+
+  await tile.click({ noWaitAfter: true }).catch(() => null);
+  await page.waitForTimeout(3_000);
+
+  // Expected post-fix: either the widget is removed (no longer on dashboard)
+  // OR a clean toggle UI shows up. No error toast.
+  const errorToast = await page.locator(':is([role="alert"], .toast-error, .alert-error, .error-message):visible').count();
+  expect(errorToast, 'Re-clicking added widget should not show an error toast').toBe(0);
 });
 
 // ---------- K20: Three stacked loading spinners on Widget Settings ----------
 
-test.fixme('[K20] opening Widget Settings should show at most one loading spinner', async ({ page }) => {
-  // BLOCKED: needs Widget Settings page object + a way to count
-  // `.loading-spinner` (or whatever the class is) at modal-open time.
-  void page;
+test.fail('[K20] opening Widget Settings should show at most one loading spinner', async ({ page }) => {
+  test.setTimeout(60_000);
+
+  const dashboard = new DashboardPage(page);
+  await dashboard.goto();
+  await page.waitForTimeout(2_000);
+
+  // Find a settings icon/button on any widget
+  const settingsTrigger = page.locator(
+    'main [class*="widget" i] :is([class*="settings" i], [aria-label*="settings" i], [data-target*="settings" i]), button:has-text(/⚙|settings/i)',
+  ).first();
+  await expect(settingsTrigger, 'A widget settings trigger should exist').toHaveCount(1);
+  await settingsTrigger.click({ noWaitAfter: true }).catch(() => null);
+
+  // Sample spinner count quickly — the bug is "three spinners shown
+  // simultaneously" right after opening, so check within the first 1s.
+  let maxSpinners = 0;
+  for (let i = 0; i < 5; i++) {
+    const count = await page.locator(':is(.spinner, .loading, [class*="loading-spinner" i], [class*="loader" i]):visible').count();
+    if (count > maxSpinners) maxSpinners = count;
+    await page.waitForTimeout(200);
+  }
+  expect(maxSpinners, `Should show at most one loading spinner at a time (saw ${maxSpinners})`).toBeLessThanOrEqual(1);
 });

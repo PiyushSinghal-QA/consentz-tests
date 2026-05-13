@@ -56,7 +56,7 @@ jobs:
 
       - name: Run test suite
         env:
-          BASE_URL: ${{ secrets.CONSENTZ_BASE_URL || 'https://v4.consentz.com' }}
+          BASE_URL: ${{ secrets.CONSENTZ_BASE_URL || 'https://v3.consentz.com' }}
           CONSENTZ_USERNAME: ${{ secrets.CONSENTZ_USERNAME }}
           CONSENTZ_PASSWORD: ${{ secrets.CONSENTZ_PASSWORD }}
           HEADLESS: "1"
