@@ -1,6 +1,9 @@
 import { test, expect } from '../fixtures';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 
+// `test.fail()` tripwires don't need retries.
+test.describe.configure({ retries: 0 });
+
 // Tracked-bug tripwires for Settings.
 //
 // On v3, Settings/Subscription lives at /admin/settings and /admin/subscription

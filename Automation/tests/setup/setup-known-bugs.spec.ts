@@ -1,6 +1,9 @@
 import { test, expect } from '../fixtures';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 
+// `test.fail()` tripwires don't need retries.
+test.describe.configure({ retries: 0 });
+
 // Tracked-bug tripwires for Set Up.
 //
 // K8 — Set Up › T&C: CKEditor JS file 404s, so the rich-text editor

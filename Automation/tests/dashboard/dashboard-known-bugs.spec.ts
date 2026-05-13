@@ -1,6 +1,10 @@
 import { test, expect, type Page, type Locator } from '@playwright/test';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 
+// `test.fail()` tripwires don't need retries — the first attempt is enough
+// signal.
+test.describe.configure({ retries: 0 });
+
 // Tracked-bug tripwires for Dashboard.
 //
 // Each `test.fail()` keeps the suite green while the bug exists; the

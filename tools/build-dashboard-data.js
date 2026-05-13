@@ -149,11 +149,20 @@ function flattenTests(suite, accum = [], specPath = null) {
           return dashPath ? { name: a.name, path: dashPath } : null;
         })
         .filter(Boolean);
+      const status = lastResult.status || t.status || 'unknown';
+      // Playwright JSON: `t.expectedStatus` is 'failed' for test.fail() specs,
+      // 'passed' for everything else. The outcome (expected vs unexpected)
+      // is what lets the dashboard split "known bug tripwire firing as
+      // designed" from "real regression — should not have failed."
+      const expectedStatus = t.expectedStatus || 'passed';
+      const outcome = status === expectedStatus ? 'expected' : (status === 'skipped' ? 'skipped' : 'unexpected');
       accum.push({
         title: spec.title,
         file: spec.file || currentPath,
         line: spec.line,
-        status: lastResult.status || t.status || 'unknown',
+        status,
+        expectedStatus,
+        outcome,
         durationMs: lastResult.duration || 0,
         retries: (t.results || []).length - 1,
         errors: (lastResult.errors || []).map((e) => stripAnsi(e.message || '').slice(0, 600)),
@@ -282,11 +291,21 @@ function main() {
   const overallHealth = ratedScores.length
     ? Math.round(ratedScores.reduce((a, b) => a + b, 0) / ratedScores.length)
     : null;
+  // unknownFailures = tests that should have passed but didn't (real regressions).
+  // expectedFailures = `test.fail()` tripwires firing as designed (known bugs).
+  // tripwireFired = `test.fail()` tests that unexpectedly passed (bugs may be fixed).
+  const unknownFailures = tests.filter((t) => t.status === 'failed' && t.outcome === 'unexpected').length;
+  const expectedFailures = tests.filter((t) => t.status === 'failed' && t.outcome === 'expected').length;
+  const tripwiresFired = tests.filter((t) => t.status === 'passed' && t.expectedStatus === 'failed').length;
+
   const overall = {
     pass: tests.filter((t) => t.status === 'passed').length,
     fail: tests.filter((t) => t.status === 'failed').length,
     skipped: tests.filter((t) => t.status === 'skipped').length,
     total: tests.length,
+    unknownFailures,
+    expectedFailures,
+    tripwiresFired,
     durationMs: tests.reduce((s, t) => s + (t.durationMs || 0), 0),
     runStarted: pwRaw.stats?.startTime || null,
     runDuration: pwRaw.stats?.duration || null,
@@ -294,17 +313,15 @@ function main() {
     ratedModulesCount: ratedScores.length, // how many modules had signal
   };
 
-  // 9. Detect tripwires that fired — a K-bug's `test.fail()` test that
-  //    UNEXPECTEDLY PASSED (Playwright records this as status=failed with
-  //    a message like "Expected to fail, but passed"). When the assertions
-  //    succeed, the underlying bug is probably fixed. Mark the bug so the
-  //    dashboard can surface a "🎉 may be fixed" badge for human review.
+  // 9. Detect tripwires that fired — a `test.fail()` test that
+  //    UNEXPECTEDLY PASSED. The right check is `expectedStatus='failed'
+  //    && status='passed'` (the previous regex-on-error check was wrong
+  //    because Playwright reports unexpected-pass with status='passed'
+  //    and empty errors). Mark the matching bug so the dashboard can
+  //    show "🎉 may be fixed" for human review.
   const tripwireFiredBugIds = new Set();
   for (const t of tests) {
-    if (t.status !== 'failed') continue;
-    const blob = (t.errors || []).join('\n');
-    if (!/expected to fail.*passed|expected.*pass.*to fail/i.test(blob)) continue;
-    // Match this test back to its K-bug via testName + file
+    if (!(t.expectedStatus === 'failed' && t.status === 'passed')) continue;
     for (const [id, b] of Object.entries(severity.bugs)) {
       if (b.testName && b.testName === t.title) { tripwireFiredBugIds.add(id); break; }
     }
@@ -350,7 +367,7 @@ function main() {
 
   const screenshotCount = fs.existsSync(SCREENSHOTS_DIR) ? fs.readdirSync(SCREENSHOTS_DIR).length : 0;
   console.log(`[dashboard] Wrote ${OUT}`);
-  console.log(`[dashboard] Tests: ${overall.pass}/${overall.total} passed, ${overall.fail} failed, ${overall.skipped} skipped`);
+  console.log(`[dashboard] Tests: ${overall.pass}/${overall.total} passed, ${overall.fail} failed (${unknownFailures} unknown + ${expectedFailures} known-bug tripwires), ${overall.skipped} skipped, ${tripwiresFired} tripwires fired (may be fixed)`);
   console.log(`[dashboard] Modules: ${modules.map((m) => `${m.name}(${m.pass}/${m.total}, h=${m.health === null ? 'N/A' : m.health})`).join(', ')}`);
   console.log(`[dashboard] Overall health: ${overall.health === null ? 'N/A' : overall.health} (avg of ${overall.ratedModulesCount} rated modules)`);
   console.log(`[dashboard] Bugs: ${payload.bugs.length} across ${new Set(payload.bugs.map((b) => b.module)).size} modules`);

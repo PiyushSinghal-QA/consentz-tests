@@ -3,7 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Consentz — Test Suite Health</title>
+  <title>Consentz · Test Suite Health</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
@@ -13,6 +16,8 @@
       <h1>Consentz</h1>
       <span class="tagline">Test Suite Health</span>
     </div>
+    <!-- The full dark-theme re-skin lands on index.html; preview.html stays as a sandbox. -->
+
     <div class="meta">
       <span id="generated-at" class="meta-stamp">Loading…</span>
       <span id="run-delta" class="meta-delta" title="Change vs previous run"></span>
@@ -24,17 +29,29 @@
     <section class="hero">
       <div class="hero-health">
         <div id="overall-health-ring" class="ring">
-          <span id="overall-health-score">—</span>
-          <small>health</small>
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <circle class="ring-bg" cx="50" cy="50" r="42" />
+            <circle class="ring-fg" cx="50" cy="50" r="42"
+                    stroke-dasharray="263.89" stroke-dashoffset="263.89"
+                    id="overall-health-arc" />
+          </svg>
+          <div class="ring-center">
+            <span id="overall-health-score">—</span>
+            <small>health</small>
+          </div>
         </div>
         <div class="hero-stats">
           <div class="stat">
             <span id="overall-pass" class="num pass">—</span>
             <small>passed</small>
           </div>
-          <div class="stat">
-            <span id="overall-fail" class="num fail">—</span>
-            <small>failed</small>
+          <div class="stat" title="Tests that failed unexpectedly — real regressions, NOT known-bug tripwires firing as designed">
+            <span id="overall-unknown" class="num unknown">—</span>
+            <small>unknown</small>
+          </div>
+          <div class="stat" title="`test.fail()` tripwires firing as designed for known K-bugs">
+            <span id="overall-expected" class="num expected">—</span>
+            <small>known bugs</small>
           </div>
           <div class="stat">
             <span id="overall-skipped" class="num skip">—</span>
@@ -126,10 +143,32 @@
     </section>
 
     <section class="failures">
-      <h2>Failed tests (this run)</h2>
-      <div id="failures-list" class="failures-list">
-        <p class="muted" id="no-failures-msg" style="display:none">No failed tests on this run. 🎉</p>
+      <div class="section-head">
+        <h2>Test failures</h2>
+        <span class="muted" id="failures-summary"></span>
       </div>
+
+      <!-- Unknown failures — real regressions. Loud, open by default. -->
+      <details id="failures-unknown-group" class="failures-group failures-group-unknown" open>
+        <summary>
+          <span class="group-marker">🚨</span>
+          <span class="group-label">Unknown failures</span>
+          <span class="group-count" id="failures-unknown-count">0</span>
+          <span class="group-hint">Tests that should have passed — needs investigation</span>
+        </summary>
+        <div id="failures-unknown-list" class="failures-list"></div>
+      </details>
+
+      <!-- Known-bug tripwires firing as designed. Quiet, collapsed by default. -->
+      <details id="failures-known-group" class="failures-group failures-group-known">
+        <summary>
+          <span class="group-marker">🟢</span>
+          <span class="group-label">Known-bug tripwires firing</span>
+          <span class="group-count" id="failures-known-count">0</span>
+          <span class="group-hint">`test.fail()` cases failing as designed — these are expected</span>
+        </summary>
+        <div id="failures-known-list" class="failures-list"></div>
+      </details>
     </section>
   </main>
 

@@ -2,6 +2,9 @@ import { test, expect } from '@playwright/test';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { PatientsPage } from '../../pages/patients/PatientsPage';
 
+// `test.fail()` tripwires don't need retries.
+test.describe.configure({ retries: 0 });
+
 // Tracked-bug tripwires. `test.fail()` keeps the suite green while the
 // bug exists; the moment it's fixed, the assertions pass and Playwright
 // flips the test red — un-mark and convert to a regression test.

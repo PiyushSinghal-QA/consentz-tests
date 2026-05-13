@@ -4,6 +4,10 @@ import { PatientsPage } from '../../pages/patients/PatientsPage';
 import { CalendarPage } from '../../pages/calendar/CalendarPage';
 import { DEMO_USER } from '../../test-data/users';
 
+// `test.fail()` tripwires don't need retries — the first attempt is enough
+// signal; retrying an unexpected-pass just doubles the noise.
+test.describe.configure({ retries: 0 });
+
 // Calendar-side tracked-bug tripwires. `test.fail()` keeps the suite
 // green while the bug exists; the moment it's fixed, Playwright flips
 // the test red — that's the tripwire signal to un-mark and turn this

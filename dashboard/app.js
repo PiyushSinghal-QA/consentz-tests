@@ -151,9 +151,14 @@ function render() {
   document.getElementById('w-major').textContent = weights.major;
   document.getElementById('w-minor').textContent = weights.minor;
 
-  // Hero stats
+  // Hero stats — split failures into known-bug tripwires vs unknown regressions.
+  // Server-side fields preferred when present; fall back to client-side derivation
+  // from per-test `outcome` for backward compatibility with older payloads.
+  const unknownFailures = d.overall.unknownFailures != null ? d.overall.unknownFailures : countTests(d, (t) => t.status === 'failed' && t.outcome === 'unexpected');
+  const expectedFailures = d.overall.expectedFailures != null ? d.overall.expectedFailures : countTests(d, (t) => t.status === 'failed' && t.outcome === 'expected');
   document.getElementById('overall-pass').textContent = d.overall.pass;
-  document.getElementById('overall-fail').textContent = d.overall.fail;
+  document.getElementById('overall-unknown').textContent = unknownFailures;
+  document.getElementById('overall-expected').textContent = expectedFailures;
   document.getElementById('overall-skipped').textContent = d.overall.skipped;
   document.getElementById('overall-total').textContent = d.overall.total;
 
@@ -173,13 +178,12 @@ function render() {
   ring.classList.add(cls);
   document.getElementById('overall-health-score').textContent = overallScore === null ? 'N/A' : overallScore;
 
-  // Color the ring's conic-gradient (visual fill)
-  if (overallScore === null) {
-    ring.style.background = 'conic-gradient(var(--border) 0deg, var(--border) 360deg)';
-  } else {
-    const color = cls === 'health-green' ? '#10b981' : cls === 'health-yellow' ? '#f59e0b' : '#ef4444';
-    const pct = overallScore;
-    ring.style.background = `conic-gradient(${color} ${pct * 3.6}deg, var(--border) ${pct * 3.6}deg)`;
+  // Drive the SVG ring arc (circumference = 2π × r=42 ≈ 263.89)
+  const arc = document.getElementById('overall-health-arc');
+  if (arc) {
+    const circumference = 263.89;
+    arc.style.strokeDasharray = circumference;
+    arc.style.strokeDashoffset = overallScore === null ? circumference : circumference * (1 - overallScore / 100);
   }
 
   // Trend section: 4 pies (prev vs current × tests + bugs)
@@ -244,9 +248,16 @@ function renderTrendCharts(d) {
 }
 
 const testLabels = ['Passed', 'Failed', 'Skipped'];
-const testColors = ['#10b981', '#ef4444', '#9ca3af'];
+const testColors = ['#34d399', '#f87171', '#94a3b8'];
 const bugLabels  = ['Critical', 'Major', 'Minor'];
-const bugColors  = ['#ef4444', '#f59e0b', '#6366f1'];
+const bugColors  = ['#f87171', '#fbbf24', '#818cf8'];
+
+// Shared Chart.js look-and-feel for the dark theme — used by every chart on
+// the page so they all match the rest of the UI.
+const CHART_TEXT       = '#f1f5f9';
+const CHART_TEXT_MUTED = 'rgba(241, 245, 249, 0.45)';
+const CHART_GRID       = 'rgba(255, 255, 255, 0.05)';
+const CHART_TOOLTIP_BG = 'rgba(15, 20, 40, 0.96)';
 
 function pickTests(overall) {
   if (!overall) return null;
@@ -289,9 +300,16 @@ function drawPie(canvasId, labels, data, colors, subtitle) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
-        title: { display: true, text: total ? `${subtitle} (${total})` : subtitle, padding: 4, font: { size: 12 } },
+        legend: { position: 'bottom', labels: { color: CHART_TEXT, boxWidth: 12, font: { size: 11, family: 'Inter' } } },
+        title: { display: true, text: total ? `${subtitle} (${total})` : subtitle, color: CHART_TEXT_MUTED, padding: 4, font: { size: 12, family: 'Inter' } },
         tooltip: {
+          backgroundColor: CHART_TOOLTIP_BG,
+          titleColor: CHART_TEXT,
+          bodyColor: 'rgba(241, 245, 249, 0.8)',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          padding: 12,
+          cornerRadius: 10,
           callbacks: {
             label: (ctx) => {
               const n = data ? data[ctx.dataIndex] : 0;
@@ -493,33 +511,39 @@ function renderTrendLine() {
           label: 'Health score',
           data: healthData,
           yAxisID: 'y',
-          borderColor: '#6366f1',
-          backgroundColor: 'rgba(99,102,241,0.12)',
+          borderColor: '#818cf8',
+          backgroundColor: 'rgba(129, 140, 248, 0.18)',
           fill: true,
-          tension: 0.25,
+          tension: 0.3,
           pointRadius: 3,
           pointHoverRadius: 5,
+          pointBackgroundColor: '#818cf8',
+          pointBorderColor: '#0c1226',
+          pointBorderWidth: 2,
+          borderWidth: 2.5,
         },
         {
           label: 'Pass rate %',
           data: passRateData,
           yAxisID: 'y',
-          borderColor: '#10b981',
+          borderColor: '#34d399',
           borderDash: [4, 4],
           backgroundColor: 'transparent',
-          tension: 0.25,
+          tension: 0.3,
           pointRadius: 2,
           pointHoverRadius: 4,
+          borderWidth: 2,
         },
         {
           label: 'Bug count',
           data: bugTotalData,
           yAxisID: 'y2',
-          borderColor: '#ef4444',
+          borderColor: '#f472b6',
           backgroundColor: 'transparent',
-          tension: 0.25,
+          tension: 0.3,
           pointRadius: 2,
           pointHoverRadius: 4,
+          borderWidth: 2,
         },
       ],
     },
@@ -528,8 +552,15 @@ function renderTrendLine() {
       maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12 } } },
+        legend: { position: 'bottom', labels: { color: CHART_TEXT, boxWidth: 12, font: { size: 12, family: 'Inter', weight: '500' } } },
         tooltip: {
+          backgroundColor: CHART_TOOLTIP_BG,
+          titleColor: CHART_TEXT,
+          bodyColor: 'rgba(241, 245, 249, 0.85)',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          padding: 12,
+          cornerRadius: 10,
           callbacks: {
             afterBody: (ctx) => {
               const i = ctx[0]?.dataIndex ?? 0;
@@ -544,9 +575,9 @@ function renderTrendLine() {
         },
       },
       scales: {
-        y:  { position: 'left',  min: 0, max: 100, title: { display: true, text: 'Health / Pass rate (%)' } },
-        y2: { position: 'right', min: 0, beginAtZero: true, grid: { drawOnChartArea: false }, title: { display: true, text: 'Bug count' } },
-        x:  { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } },
+        y:  { position: 'left',  min: 0, max: 100, title: { display: true, text: 'Health / Pass rate (%)', color: CHART_TEXT_MUTED, font: { family: 'Inter' } }, ticks: { color: CHART_TEXT_MUTED, font: { family: 'Inter' } }, grid: { color: CHART_GRID } },
+        y2: { position: 'right', min: 0, beginAtZero: true, grid: { drawOnChartArea: false }, title: { display: true, text: 'Bug count', color: CHART_TEXT_MUTED, font: { family: 'Inter' } }, ticks: { color: CHART_TEXT_MUTED, font: { family: 'Inter' } } },
+        x:  { ticks: { color: CHART_TEXT_MUTED, maxRotation: 0, autoSkip: true, maxTicksLimit: 10, font: { family: 'Inter' } }, grid: { color: CHART_GRID } },
       },
     },
   });
@@ -554,49 +585,98 @@ function renderTrendLine() {
 
 // ---- Failures + lightbox -----------------------------------------------
 
-function renderFailures(modules) {
-  const list = document.getElementById('failures-list');
-  list.innerHTML = '';
+function countTests(d, pred) {
+  let n = 0;
+  for (const m of d.modules || []) for (const t of m.tests || []) if (pred(t)) n++;
+  return n;
+}
 
-  const failed = [];
+/** Resolve which K-bug a test maps to, if any. Matches by exact testName first
+ *  (the canonical traceability field), then falls back to `[Kxx]` prefix in the
+ *  title. Returns the bug ID or null. */
+function bugIdForTest(t, allBugs) {
+  for (const b of allBugs || []) {
+    if (b.testName && b.testName === t.title) return b.id;
+  }
+  const m = (t.title || '').match(/^\[\s*(K\d+)/i);
+  return m ? m[1].toUpperCase() : null;
+}
+
+function renderFailures(modules) {
+  const unknownList = document.getElementById('failures-unknown-list');
+  const knownList = document.getElementById('failures-known-list');
+  const summary = document.getElementById('failures-summary');
+  unknownList.innerHTML = '';
+  knownList.innerHTML = '';
+
+  const allBugs = (state.data && state.data.bugs) || [];
+
+  const unknown = [];
+  const known = [];
   for (const m of modules) {
     for (const t of m.tests || []) {
-      if (t.status === 'failed') failed.push({ ...t, module: m.name });
+      if (t.status !== 'failed') continue;
+      const item = { ...t, module: m.name, bugId: bugIdForTest(t, allBugs) };
+      // Classification: outcome takes precedence (server-emitted). Fall back to
+      // the bug-id heuristic: a [Kxx] tag implies known, no tag implies unknown.
+      const isKnown = item.outcome === 'expected' || (item.outcome == null && !!item.bugId);
+      if (isKnown) known.push(item); else unknown.push(item);
     }
   }
 
-  if (failed.length === 0) {
-    list.innerHTML = '<p style="color:var(--text-muted)">No failed tests on this run.</p>';
-    return;
+  // Section summary line
+  if (unknown.length === 0 && known.length === 0) {
+    summary.textContent = 'No failed tests on this run.';
+  } else {
+    summary.textContent = `${unknown.length} unknown · ${known.length} known-bug tripwire${known.length === 1 ? '' : 's'} firing`;
   }
 
-  for (const t of failed) {
-    const card = document.createElement('div');
-    card.className = 'failure-card';
-    card.tabIndex = 0;
-    card.setAttribute('role', 'button');
-    card.setAttribute('aria-label', `Open failure details for ${t.title}`);
+  // Render counts in the group summaries
+  document.getElementById('failures-unknown-count').textContent = unknown.length;
+  document.getElementById('failures-known-count').textContent = known.length;
 
-    const firstErr = stripCtrl((t.errors || [])[0] || '');
-    const errPreview = firstErr.split('\n').slice(0, 3).join('\n');
-    const thumbCount = (t.attachments || []).length;
-
-    card.innerHTML = `
-      <h4>${escapeHtml(t.title)} <small class="failure-mod">— ${escapeHtml(t.module)}</small></h4>
-      <div class="file">${escapeHtml(t.file || '')}${t.line ? ':' + t.line : ''}</div>
-      ${t.retries ? `<div class="retries">Retried ${t.retries}×</div>` : ''}
-      ${errPreview ? `<pre class="err-preview">${escapeHtml(errPreview)}${firstErr.split('\n').length > 3 ? '\n…' : ''}</pre>` : ''}
-      <div class="failure-meta">
-        ${thumbCount ? `<span class="failure-thumb-count">📷 ${thumbCount} screenshot${thumbCount === 1 ? '' : 's'}</span>` : '<span class="muted">no screenshot</span>'}
-        <span class="failure-open">Open details →</span>
-      </div>
-    `;
-    card.addEventListener('click', () => openFailureDetail(t));
-    card.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFailureDetail(t); }
-    });
-    list.appendChild(card);
+  // Unknown group is open by default + visible only when it has content; we
+  // collapse it to a "no unknowns" note if empty so the panel doesn't look
+  // alarmingly red when there's nothing wrong.
+  const unknownGroup = document.getElementById('failures-unknown-group');
+  unknownGroup.classList.toggle('is-empty', unknown.length === 0);
+  if (unknown.length === 0) {
+    unknownList.innerHTML = '<p class="failures-empty">🎉 No real regressions on this run — every failure is an expected tripwire.</p>';
+  } else {
+    for (const t of unknown) unknownList.appendChild(buildFailureCard(t, 'unknown'));
   }
+  for (const t of known) knownList.appendChild(buildFailureCard(t, 'known'));
+}
+
+function buildFailureCard(t, kind) {
+  const card = document.createElement('div');
+  card.className = `failure-card failure-${kind}`;
+  card.tabIndex = 0;
+  card.setAttribute('role', 'button');
+  card.setAttribute('aria-label', `Open failure details for ${t.title}`);
+
+  const firstErr = stripCtrl((t.errors || [])[0] || '');
+  const errPreview = firstErr.split('\n').slice(0, 3).join('\n');
+  const thumbCount = (t.attachments || []).length;
+  const bugTag = t.bugId
+    ? `<span class="failure-bug-tag" title="Maps to bug ${t.bugId}">${t.bugId}</span>`
+    : (kind === 'unknown' ? `<span class="failure-bug-tag failure-bug-tag-unknown">UNKNOWN</span>` : '');
+
+  card.innerHTML = `
+    <h4>${bugTag}${escapeHtml(t.title)} <small class="failure-mod">— ${escapeHtml(t.module)}</small></h4>
+    <div class="file">${escapeHtml(t.file || '')}${t.line ? ':' + t.line : ''}</div>
+    ${t.retries ? `<div class="retries">Retried ${t.retries}×</div>` : ''}
+    ${errPreview ? `<pre class="err-preview">${escapeHtml(errPreview)}${firstErr.split('\n').length > 3 ? '\n…' : ''}</pre>` : ''}
+    <div class="failure-meta">
+      ${thumbCount ? `<span class="failure-thumb-count">📷 ${thumbCount} screenshot${thumbCount === 1 ? '' : 's'}</span>` : '<span class="muted">no screenshot</span>'}
+      <span class="failure-open">Open details →</span>
+    </div>
+  `;
+  card.addEventListener('click', () => openFailureDetail(t));
+  card.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFailureDetail(t); }
+  });
+  return card;
 }
 
 function openFailureDetail(t) {

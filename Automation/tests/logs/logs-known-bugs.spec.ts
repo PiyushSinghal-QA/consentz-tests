@@ -1,6 +1,12 @@
 import { test, expect } from '../fixtures';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 
+// `test.fail()` tripwires don't need retries — an unexpected-pass on retry
+// would just duplicate the "may be fixed" signal we already capture on the
+// first attempt. Saves CI time and stops the dashboard from showing the
+// same probe twice.
+test.describe.configure({ retries: 0 });
+
 // Tracked-bug tripwires for Logs.
 //
 // K1 — Logs › Blockers returns HTTP 500 (null variable access on
