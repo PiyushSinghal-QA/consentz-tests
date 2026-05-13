@@ -174,7 +174,10 @@ function loadPreviousSnapshot() {
 // ---- Main --------------------------------------------------------------
 
 function main() {
-  // 1. Snapshot the PREVIOUS run BEFORE we overwrite results.json
+  // 1. Snapshot the PREVIOUS run BEFORE we overwrite results.json.
+  //    dashboard/data/ is gitignored, so on a fresh CI checkout the dir
+  //    doesn't exist yet — create it before any write.
+  fs.mkdirSync(path.join(ROOT, 'dashboard/data'), { recursive: true });
   const previous = loadPreviousSnapshot();
   if (previous) fs.writeFileSync(PREV_OUT, JSON.stringify(previous, null, 2));
 
