@@ -44,7 +44,7 @@ jobs:
           CONSENTZ_USERNAME: ${{ secrets.CONSENTZ_USERNAME }}
           CONSENTZ_PASSWORD: ${{ secrets.CONSENTZ_PASSWORD }}
           HEADLESS: "1"
-        run: npx playwright test --project=chromium --reporter=list,json,html
+        run: npx playwright test --project=chromium
         continue-on-error: true   # Build dashboard even on test failure — that's the whole point
 
       - name: Build dashboard data

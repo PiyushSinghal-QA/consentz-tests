@@ -154,6 +154,8 @@ function renderModules(modules, weights, thresholds) {
     const cls = healthClass(score, thresholds);
     const counts = { critical: 0, major: 0, minor: 0 };
     for (const b of m.bugs) counts[severityFor(b)] = (counts[severityFor(b)] || 0) + 1;
+    const unverified = m.bugs.filter((b) => b.unverified).length;
+    const automated = m.bugs.filter((b) => b.test).length;
 
     const card = document.createElement('div');
     card.className = `module-card ${cls}`;
@@ -174,6 +176,10 @@ function renderModules(modules, weights, thresholds) {
         ${counts.minor ? `<span class="badge minor">${counts.minor} minor</span>` : ''}
         ${m.bugs.length === 0 ? `<span style="color:var(--text-muted);font-size:13px">No tracked defects</span>` : ''}
       </div>
+      ${m.bugs.length ? `<div class="module-stats" style="margin-top:6px;font-size:12px;color:var(--text-muted)">
+        <span title="Bugs with an automated tripwire test">${automated}/${m.bugs.length} automated</span>
+        ${unverified ? `<span class="badge unverified" title="Original report needs reproduction on current build">${unverified} unverified</span>` : ''}
+      </div>` : ''}
     `;
     grid.appendChild(card);
   }
@@ -214,10 +220,12 @@ function renderBugs(bugs) {
     const tr = document.createElement('tr');
     const sev = severityFor(b);
     const overridden = !!state.overrides[b.id];
+    if (b.unverified) tr.classList.add('bug-unverified');
     tr.innerHTML = `
       <td><span class="bug-id">${b.id}</span></td>
       <td>${escapeHtml(b.module)}</td>
-      <td>${escapeHtml(b.title)}</td>
+      <td>${escapeHtml(b.title)}${b.unverified ? ' <span class="badge unverified" title="Original report needs reproduction on the current build">unverified</span>' : ''}</td>
+      <td>${coverageBadge(b)}</td>
       <td>
         <select class="severity-select ${sev}" data-bug="${b.id}">
           ${SEVERITY_VALUES.map((v) => `<option value="${v}"${v === sev ? ' selected' : ''}>${cap(v)}</option>`).join('')}
@@ -235,6 +243,16 @@ function renderBugs(bugs) {
     });
     tbody.appendChild(tr);
   }
+}
+
+function coverageBadge(bug) {
+  if (bug.test) {
+    return `<span class="badge coverage-auto" title="Tripwire test: ${escapeHtml(bug.test)}">🤖 automated</span>`;
+  }
+  if (bug.manualTC) {
+    return `<span class="badge coverage-manual" title="Manual TC: ${escapeHtml(bug.manualTC)}">📝 manual TC</span>`;
+  }
+  return `<span class="badge coverage-none" title="No test maps to this defect yet">⚠ no test</span>`;
 }
 
 function renderFailures(modules) {
@@ -272,12 +290,14 @@ function openBugDetail(bug) {
   const body = document.getElementById('bug-detail-body');
   const sev = severityFor(bug);
   body.innerHTML = `
-    <h3><span class="bug-id">${bug.id}</span> <span class="badge ${sev}">${sev}</span></h3>
+    <h3><span class="bug-id">${bug.id}</span> <span class="badge ${sev}">${sev}</span>${bug.unverified ? ' <span class="badge unverified">unverified</span>' : ''}</h3>
     <p>${escapeHtml(bug.title)}</p>
     <dl>
       <dt>Module</dt><dd>${escapeHtml(bug.module)}</dd>
       <dt>Default severity</dt><dd>${escapeHtml(bug.severity)}</dd>
       <dt>Effective severity</dt><dd>${escapeHtml(sev)}${state.overrides[bug.id] ? ' <em>(overridden in this browser)</em>' : ''}</dd>
+      <dt>Automated tripwire</dt><dd>${bug.test ? `<code>${escapeHtml(bug.test)}</code>` : '<em>none yet — defect has no automated coverage</em>'}</dd>
+      <dt>Manual TC</dt><dd>${bug.manualTC ? `<code>${escapeHtml(bug.manualTC)}</code>` : '<em>none</em>'}</dd>
     </dl>
     <p style="margin-top:16px;font-size:13px;color:var(--text-muted)">Full description, repro steps, and surfacing test live in <code>BUGS.md</code>.</p>
   `;

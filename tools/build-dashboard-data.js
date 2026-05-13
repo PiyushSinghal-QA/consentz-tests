@@ -125,7 +125,10 @@ function main() {
     if (!byModule[bug.module]) byModule[bug.module] = { name: bug.module, tests: [] };
   }
 
-  // 6. Compute module-level stats
+  // 6. Compute module-level stats. Preserve pinned-list order so the dashboard
+  //    grid matches the user's mental nav order (Login, Dashboard, Calendar, …)
+  //    instead of alphabetising it.
+  const pinnedOrder = severity.modules || [];
   const modules = Object.values(byModule).map((m) => {
     const pass = m.tests.filter((t) => t.status === 'passed').length;
     const fail = m.tests.filter((t) => t.status === 'failed').length;
@@ -143,7 +146,14 @@ function main() {
       bugs,
     };
   });
-  modules.sort((a, b) => a.name.localeCompare(b.name));
+  modules.sort((a, b) => {
+    const ai = pinnedOrder.indexOf(a.name);
+    const bi = pinnedOrder.indexOf(b.name);
+    if (ai === -1 && bi === -1) return a.name.localeCompare(b.name);
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
 
   // 7. Overall stats
   const overall = {

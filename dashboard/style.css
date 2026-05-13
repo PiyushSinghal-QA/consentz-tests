@@ -251,6 +251,11 @@ section h2 { font-size: 18px; margin: 0 0 12px; }
 .badge.critical { background: #fee2e2; color: var(--red); }
 .badge.major    { background: #fef3c7; color: #92400e; }
 .badge.minor    { background: #e0e7ff; color: #3730a3; }
+.badge.unverified { background: #f3e8ff; color: #6b21a8; margin-left: 6px; }
+.badge.coverage-auto   { background: #d1fae5; color: #065f46; }
+.badge.coverage-manual { background: #fef3c7; color: #92400e; }
+.badge.coverage-none   { background: #fee2e2; color: var(--red); }
+.bug-unverified { background: #faf5ff; }
 
 /* Bugs table */
 .bugs-toolbar {
