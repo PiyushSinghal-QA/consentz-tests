@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      run_full_suite:
+        description: 'Include calendar / patients / dashboard tests (slower; off by default during integration iteration)'
+        type: boolean
+        default: false
   schedule:
     # Run every 12 hours (00:00 and 12:00 UTC) so the dashboard reflects
     # the current state of staging without needing a manual push.
@@ -70,6 +75,12 @@ jobs:
           CONSENTZ_USERNAME: ${{ secrets.CONSENTZ_USERNAME }}
           CONSENTZ_PASSWORD: ${{ secrets.CONSENTZ_PASSWORD }}
           HEADLESS: "1"
+          # Heavy-suite toggle. Default skips tests/{calendar,patients,
+          # dashboard}/ so push/PR/cron runs finish in ~3 min during
+          # integration iteration. The "Run workflow" UI exposes a
+          # checkbox (run_full_suite) to opt in for a single manual run.
+          # To re-enable the full suite permanently: hardcode 'true' below.
+          RUN_FULL_SUITE: ${{ github.event.inputs.run_full_suite || 'false' }}
         run: npx playwright test --project=chromium
         continue-on-error: true   # Build dashboard even on test failure — that's the whole point
 
