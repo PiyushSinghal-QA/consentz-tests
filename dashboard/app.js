@@ -670,9 +670,14 @@ function buildFailureCard(t, kind) {
       <span class="ai-sev ai-sev-${escapeHtml(ai.severity)}">${escapeHtml(ai.severity)}</span>
       <span class="ai-cause">${escapeHtml(truncate(ai.rootCause, 160))}</span>
     </div>` : '';
-  const sentryLink = t.sentryIssueUrl && !t.sentryIssueUrl.startsWith('#sentry-stub')
-    ? `<a class="failure-sentry-link" href="${escapeHtml(t.sentryIssueUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🔗 AI fix on Sentry</a>`
-    : (t.sentryIssueUrl ? `<span class="failure-sentry-link failure-sentry-link-stub" title="Sentry event queued — will go live when SENTRY_DSN is configured in CI">🔗 Sentry pending</span>` : '');
+  // sentrySent=true → real event dispatched, link to a populated Sentry search.
+  // sentrySent=false → URL is a fingerprint placeholder; flag it so the user
+  // doesn't expect AI fixes that haven't been generated yet (no DSN in CI).
+  const sentryLink = t.sentryIssueUrl
+    ? (t.sentrySent
+        ? `<a class="failure-sentry-link" href="${escapeHtml(t.sentryIssueUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🔗 AI fix on Sentry</a>`
+        : `<span class="failure-sentry-link failure-sentry-link-stub" title="No SENTRY_DSN in CI yet — event not dispatched. Add the secret to populate AI fixes.">🔗 Sentry pending</span>`)
+    : '';
 
   card.innerHTML = `
     <h4>${bugTag}${escapeHtml(t.title)} <small class="failure-mod">— ${escapeHtml(t.module)}</small></h4>
@@ -706,9 +711,11 @@ function openFailureDetail(t) {
 
   const ai = t.aiAnalysis;
   const sentryUrl = t.sentryIssueUrl;
-  const sentryCta = sentryUrl && !sentryUrl.startsWith('#sentry-stub')
-    ? `<a class="ai-sentry-cta" href="${escapeHtml(sentryUrl)}" target="_blank" rel="noopener">View AI fix on Sentry →</a>`
-    : (sentryUrl ? `<span class="ai-sentry-cta ai-sentry-cta-stub" title="Sentry integration ready — needs SENTRY_DSN in CI to go live">Sentry pending (no DSN in CI yet)</span>` : '');
+  const sentryCta = sentryUrl
+    ? (t.sentrySent
+        ? `<a class="ai-sentry-cta" href="${escapeHtml(sentryUrl)}" target="_blank" rel="noopener">View AI fix on Sentry →</a>`
+        : `<span class="ai-sentry-cta ai-sentry-cta-stub" title="Sentry integration is wired — needs SENTRY_DSN in CI for events to dispatch. Once set, this link will show the AI fix.">Sentry pending (no DSN in CI yet)</span>`)
+    : '';
   const aiSection = ai ? `
     <div class="ai-panel ai-panel-${escapeHtml(ai.severity)}">
       <div class="ai-panel-head">
