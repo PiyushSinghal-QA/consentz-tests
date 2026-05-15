@@ -229,9 +229,22 @@ async function enrichFailuresWithSentry(tests, opts = {}) {
   // ---- STEP 3: actually send the new events. ----
   // Wrap init in try/catch — if Sentry can't init for ANY reason (bad DSN,
   // network), we keep the fallback URLs and report the failure clearly.
+  // @sentry/node is installed in Automation/node_modules — this script
+  // lives in tools/ which Node's resolution algorithm doesn't link to.
+  // require.resolve with an explicit paths list searches the places we
+  // know the SDK might land (Automation deps first, then any local
+  // tools/node_modules or root node_modules) so we don't depend on
+  // working-directory being any particular thing.
   let Sentry;
   try {
-    Sentry = require('@sentry/node');
+    const sentryEntry = require.resolve('@sentry/node', {
+      paths: [
+        path.join(ROOT, 'Automation', 'node_modules'),
+        path.join(ROOT, 'node_modules'),
+        path.join(__dirname, 'node_modules'),
+      ],
+    });
+    Sentry = require(sentryEntry);
     Sentry.init({
       dsn,
       tracesSampleRate: 0,
@@ -240,7 +253,7 @@ async function enrichFailuresWithSentry(tests, opts = {}) {
       environment: opts.env || process.env.BASE_URL || 'staging',
       release: process.env.GIT_SHA || undefined,
     });
-    log('[sentry] SDK initialised');
+    log(`[sentry] SDK initialised (loaded from ${path.relative(ROOT, sentryEntry)})`);
   } catch (e) {
     log(`[sentry] SDK init failed — keeping fallback URLs: ${e.message}`);
     saveCache(cache);
