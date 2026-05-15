@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       run_full_suite:
-        description: 'Include calendar / patients / dashboard tests (slower; off by default during integration iteration)'
+        description: 'Include calendar / patients / dashboard tests (default: on — untick to run only the fast subset)'
         type: boolean
-        default: false
+        default: true
   schedule:
     # Run every 12 hours (00:00 and 12:00 UTC) so the dashboard reflects
     # the current state of staging without needing a manual push.
@@ -75,12 +75,12 @@ jobs:
           CONSENTZ_USERNAME: ${{ secrets.CONSENTZ_USERNAME }}
           CONSENTZ_PASSWORD: ${{ secrets.CONSENTZ_PASSWORD }}
           HEADLESS: "1"
-          # Heavy-suite toggle. Default skips tests/{calendar,patients,
-          # dashboard}/ so push/PR/cron runs finish in ~3 min during
-          # integration iteration. The "Run workflow" UI exposes a
-          # checkbox (run_full_suite) to opt in for a single manual run.
-          # To re-enable the full suite permanently: hardcode 'true' below.
-          RUN_FULL_SUITE: ${{ github.event.inputs.run_full_suite || 'false' }}
+          # Heavy-suite toggle. Now defaulting to 'true' — push/PR/cron
+          # runs include tests/{calendar,patients,dashboard}/. The "Run
+          # workflow" UI still exposes the checkbox so individual runs can
+          # opt out (untick to use the fast subset). To make ALL runs fast
+          # again permanently, flip this fallback from 'true' to 'false'.
+          RUN_FULL_SUITE: ${{ github.event.inputs.run_full_suite || 'true' }}
         run: npx playwright test --project=chromium
         continue-on-error: true   # Build dashboard even on test failure — that's the whole point
 
