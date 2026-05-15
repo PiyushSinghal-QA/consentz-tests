@@ -73,8 +73,19 @@ jobs:
         run: npx playwright test --project=chromium
         continue-on-error: true   # Build dashboard even on test failure — that's the whole point
 
-      - name: Build dashboard data
+      - name: Build dashboard data (incl. Sentry enrichment)
         working-directory: .
+        env:
+          # Optional — when set, build-dashboard-data.js dispatches each
+          # Unknown failure + tripwire-fired event to our Sentry project and
+          # attaches the issue URL to the dashboard payload. Without it, the
+          # sender runs in stub mode (still attaches placeholder URLs so the
+          # dashboard can render the "Sentry pending" badge).
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_ORG_SLUG: ${{ secrets.SENTRY_ORG_SLUG || 'piyush-singhal' }}
+          SENTRY_PROJECT_ID: ${{ secrets.SENTRY_PROJECT_ID || '4511393188085760' }}
+          GIT_SHA: ${{ github.sha }}
+          GIT_BRANCH: ${{ github.ref_name }}
         run: node tools/build-dashboard-data.js
 
       - name: Upload Playwright HTML report (artifact)

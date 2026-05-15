@@ -662,13 +662,27 @@ function buildFailureCard(t, kind) {
     ? `<span class="failure-bug-tag" title="Maps to bug ${t.bugId}">${t.bugId}</span>`
     : (kind === 'unknown' ? `<span class="failure-bug-tag failure-bug-tag-unknown">UNKNOWN</span>` : '');
 
+  // AI-style triage preview: severity chip + 1-line root cause. Only shown
+  // when the analyzer ran (unknown failures + may-be-fixed tripwires).
+  const ai = t.aiAnalysis;
+  const aiBlock = ai ? `
+    <div class="failure-ai-preview" data-severity="${escapeHtml(ai.severity)}">
+      <span class="ai-sev ai-sev-${escapeHtml(ai.severity)}">${escapeHtml(ai.severity)}</span>
+      <span class="ai-cause">${escapeHtml(truncate(ai.rootCause, 160))}</span>
+    </div>` : '';
+  const sentryLink = t.sentryIssueUrl && !t.sentryIssueUrl.startsWith('#sentry-stub')
+    ? `<a class="failure-sentry-link" href="${escapeHtml(t.sentryIssueUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🔗 AI fix on Sentry</a>`
+    : (t.sentryIssueUrl ? `<span class="failure-sentry-link failure-sentry-link-stub" title="Sentry event queued — will go live when SENTRY_DSN is configured in CI">🔗 Sentry pending</span>` : '');
+
   card.innerHTML = `
     <h4>${bugTag}${escapeHtml(t.title)} <small class="failure-mod">— ${escapeHtml(t.module)}</small></h4>
     <div class="file">${escapeHtml(t.file || '')}${t.line ? ':' + t.line : ''}</div>
     ${t.retries ? `<div class="retries">Retried ${t.retries}×</div>` : ''}
+    ${aiBlock}
     ${errPreview ? `<pre class="err-preview">${escapeHtml(errPreview)}${firstErr.split('\n').length > 3 ? '\n…' : ''}</pre>` : ''}
     <div class="failure-meta">
       ${thumbCount ? `<span class="failure-thumb-count">📷 ${thumbCount} screenshot${thumbCount === 1 ? '' : 's'}</span>` : '<span class="muted">no screenshot</span>'}
+      ${sentryLink}
       <span class="failure-open">Open details →</span>
     </div>
   `;
@@ -679,16 +693,53 @@ function buildFailureCard(t, kind) {
   return card;
 }
 
+function truncate(s, n) {
+  s = String(s || '');
+  return s.length <= n ? s : s.slice(0, n - 1).trimEnd() + '…';
+}
+
 function openFailureDetail(t) {
   const dlg = document.getElementById('failure-detail');
   const body = document.getElementById('failure-detail-body');
   const errors = (t.errors || []).map(stripCtrl);
   const attachments = t.attachments || [];
 
+  const ai = t.aiAnalysis;
+  const sentryUrl = t.sentryIssueUrl;
+  const sentryCta = sentryUrl && !sentryUrl.startsWith('#sentry-stub')
+    ? `<a class="ai-sentry-cta" href="${escapeHtml(sentryUrl)}" target="_blank" rel="noopener">View AI fix on Sentry →</a>`
+    : (sentryUrl ? `<span class="ai-sentry-cta ai-sentry-cta-stub" title="Sentry integration ready — needs SENTRY_DSN in CI to go live">Sentry pending (no DSN in CI yet)</span>` : '');
+  const aiSection = ai ? `
+    <div class="ai-panel ai-panel-${escapeHtml(ai.severity)}">
+      <div class="ai-panel-head">
+        <span class="ai-panel-title">🔍 Failure analysis</span>
+        <span class="ai-sev ai-sev-${escapeHtml(ai.severity)}">${escapeHtml(ai.severity)}</span>
+        <span class="ai-source" title="${escapeHtml(ai.source)} engine">${escapeHtml(ai.source === 'heuristic' ? 'heuristic (Sentry AI when wired)' : ai.source)}</span>
+        ${sentryCta}
+      </div>
+      <div class="ai-section">
+        <h5>Root cause</h5>
+        <p>${escapeHtml(ai.rootCause || '')}</p>
+      </div>
+      ${(ai.reproSteps && ai.reproSteps.length) ? `
+        <div class="ai-section">
+          <h5>How to reproduce manually</h5>
+          <ol class="repro-steps">
+            ${ai.reproSteps.map((s) => `<li>${escapeHtml(s)}</li>`).join('')}
+          </ol>
+        </div>` : ''}
+      ${ai.suggestedFix ? `
+        <div class="ai-section">
+          <h5>Suggested fix</h5>
+          <p class="ai-fix">${escapeHtml(ai.suggestedFix)}</p>
+        </div>` : ''}
+    </div>` : '';
+
   body.innerHTML = `
     <h3>${escapeHtml(t.title)}</h3>
     <p class="failure-detail-sub"><strong>${escapeHtml(t.module)}</strong> · <code>${escapeHtml(t.file || '')}${t.line ? ':' + t.line : ''}</code>${t.retries ? ` · retried ${t.retries}×` : ''}${t.durationMs ? ` · ${Math.round(t.durationMs / 1000)}s` : ''}</p>
-    ${errors.length ? `<h4>Errors</h4>${errors.map((e) => `<pre class="err-full">${escapeHtml(e)}</pre>`).join('')}` : ''}
+    ${aiSection}
+    ${errors.length ? `<h4>Raw error</h4>${errors.map((e) => `<pre class="err-full">${escapeHtml(e)}</pre>`).join('')}` : ''}
     ${attachments.length ? `
       <h4>Screenshots <small class="muted">(click to enlarge)</small></h4>
       <div class="screenshot-grid">

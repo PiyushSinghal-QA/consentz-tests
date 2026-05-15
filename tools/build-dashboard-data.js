@@ -19,6 +19,8 @@
 
 const fs = require('fs');
 const path = require('path');
+const { analyzeFailure } = require('./analyze-failures');
+const { enrichFailuresWithSentry } = require('./send-to-sentry');
 
 const ROOT = path.resolve(__dirname, '..');
 const PW_RESULTS = path.join(ROOT, 'Automation/test-results/results.json');
@@ -156,7 +158,7 @@ function flattenTests(suite, accum = [], specPath = null) {
       // designed" from "real regression — should not have failed."
       const expectedStatus = t.expectedStatus || 'passed';
       const outcome = status === expectedStatus ? 'expected' : (status === 'skipped' ? 'skipped' : 'unexpected');
-      accum.push({
+      const testRecord = {
         title: spec.title,
         file: spec.file || currentPath,
         line: spec.line,
@@ -167,7 +169,23 @@ function flattenTests(suite, accum = [], specPath = null) {
         retries: (t.results || []).length - 1,
         errors: (lastResult.errors || []).map((e) => stripAnsi(e.message || '').slice(0, 600)),
         attachments: copiedAttachments,
-      });
+      };
+      // Failure triage: for every UNKNOWN failure (real regression), run the
+      // heuristic analyzer to attach severity / rootCause / reproSteps /
+      // suggestedFix. Known-bug tripwires firing as designed (outcome=expected)
+      // don't get analysis — they're not actionable, the bug catalogue
+      // already covers them. Tripwires that unexpectedly passed also get
+      // analysis with a "may be fixed" angle.
+      const needsAnalysis = (status === 'failed' && outcome === 'unexpected')
+        || (status === 'passed' && expectedStatus === 'failed');
+      if (needsAnalysis) {
+        try {
+          testRecord.aiAnalysis = analyzeFailure(testRecord);
+        } catch (e) {
+          console.warn(`[dashboard] analyzer failed on "${spec.title}": ${e.message}`);
+        }
+      }
+      accum.push(testRecord);
     }
   }
   return accum;
@@ -208,7 +226,7 @@ function loadPreviousSnapshot() {
 
 // ---- Main --------------------------------------------------------------
 
-function main() {
+async function main() {
   // 1. Snapshot the PREVIOUS run BEFORE we overwrite results.json.
   //    dashboard/data/ is gitignored, so on a fresh CI checkout the dir
   //    doesn't exist yet — create it before any write.
@@ -327,6 +345,25 @@ function main() {
     }
   }
 
+  // 9b. Sentry enrichment: for every failure that's actionable (Unknown
+  //     or "may be fixed"), dispatch a Sentry event and attach the issue
+  //     URL to the test record. Runs in stub mode when SENTRY_DSN is not
+  //     set (local builds, first-ever CI run before the secret is added),
+  //     attaching placeholder URLs so the dashboard rendering can be
+  //     verified before the real DSN lands.
+  // The analyzer wraps the test records with .module = m.name for context;
+  // do the same here so the Sentry event tags carry it.
+  const enrichedTests = [];
+  for (const m of modules) for (const t of m.tests || []) enrichedTests.push(Object.assign(t, { module: m.name }));
+  try {
+    const sentryStats = await enrichFailuresWithSentry(enrichedTests, {
+      env: process.env.BASE_URL,
+    });
+    console.log(`[dashboard] Sentry: ${sentryStats.mode} mode · ${sentryStats.sent} sent · ${sentryStats.cached} cached`);
+  } catch (e) {
+    console.warn(`[dashboard] Sentry enrichment failed: ${e.message}`);
+  }
+
   // 10. Emit
   const payload = {
     generatedAt: new Date().toISOString(),
@@ -423,4 +460,7 @@ function appendToTrend(payload) {
   return { points: merged };
 }
 
-main();
+main().catch((e) => {
+  console.error('[dashboard] build failed:', e);
+  process.exit(1);
+});
