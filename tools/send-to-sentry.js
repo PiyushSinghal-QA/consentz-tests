@@ -32,9 +32,81 @@ const crypto = require('crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const FINGERPRINT_CACHE = path.join(ROOT, 'dashboard/data/sentry-fingerprints.json');
+const SCREENSHOTS_DIR = path.join(ROOT, 'dashboard/data/screenshots');
+const BUGS_MD = path.join(ROOT, 'BUGS.md');
 const DEFAULT_ORG_SLUG = 'piyush-singhal';
 const DEFAULT_PROJECT_ID = '4511393188085760';
 const FINGERPRINT_TAG = 'consentz_fingerprint';
+
+// ---- BUGS.md parser ----------------------------------------------------
+// One-shot parse per build. We pull the human-written description, page/
+// feature, severity, surfacing-test ref, and triage-notes paragraph for
+// each K-bug so the Sentry event has the same context a human triager
+// would read.
+
+let _bugCatalogCache = null;
+function loadBugCatalog() {
+  if (_bugCatalogCache) return _bugCatalogCache;
+  if (!fs.existsSync(BUGS_MD)) { _bugCatalogCache = {}; return _bugCatalogCache; }
+  const src = fs.readFileSync(BUGS_MD, 'utf8');
+  const catalog = {};
+
+  // Open-defects table rows look like:
+  //   | **K1**  | Logs › Blockers | ... | Major | `TC.SMOKE.001.050` |
+  for (const line of src.split('\n')) {
+    const idMatch = line.match(/^\|\s*\*\*(K\d+)\*\*\s*\|/);
+    if (!idMatch) continue;
+    const cells = line.split('|').slice(1, -1).map((s) => s.trim());
+    if (cells.length < 5) continue;
+    catalog[idMatch[1]] = {
+      pageFeature: cells[1],
+      description: cells[2],
+      severity: cells[3].replace(/\*\*/g, '').trim().toLowerCase(),
+      surfacedBy: cells[4],
+      triageNotes: '',
+    };
+  }
+
+  // Triage notes block — paragraphs like "**K21 (Critical).** Surfaces a 500 ..."
+  // Each paragraph belongs to the K-bug whose ID opens it.
+  const notesIdx = src.indexOf('## Triage notes');
+  if (notesIdx >= 0) {
+    const notesEnd = src.indexOf('\n## ', notesIdx + 1);
+    const notes = src.slice(notesIdx, notesEnd > 0 ? notesEnd : undefined);
+    const re = /\*\*\s*(K\d+)\b[^*]*\*\*\s*([\s\S]*?)(?=\n\*\*\s*K\d+|\n## |\n---|\n$|$)/g;
+    let m;
+    while ((m = re.exec(notes))) {
+      if (catalog[m[1]]) catalog[m[1]].triageNotes = m[2].trim();
+    }
+  }
+
+  _bugCatalogCache = catalog;
+  return catalog;
+}
+
+function bugIdFromTest(test) {
+  if (test.bugId) return test.bugId;
+  const m = (test.title || '').match(/^\[\s*(K\d+)/i);
+  return m ? m[1].toUpperCase() : null;
+}
+
+/** Heuristic for which dev-code area is implicated. Helps Sentry's AI focus
+ *  its fix suggestion even though it can't see the PHP source directly. */
+function devCodeHintFor(bugId, pageFeature) {
+  if (!bugId && !pageFeature) return null;
+  const pf = (pageFeature || '').toLowerCase();
+  if (/patient/.test(pf)) return 'Symfony backend (Patient controller / validator) + Patient search index';
+  if (/calendar|booking|appointment/.test(pf)) return 'Symfony backend (Appointment controller) + FullCalendar JS bindings';
+  if (/dashboard.*widget|widget.*library|widget.*render/.test(pf)) return 'Frontend (widget library + dashboard render pipeline)';
+  if (/dashboard.*clinic.*switch|clinic switch/.test(pf)) return 'Frontend (clinic-switch lifecycle / jQuery plugin teardown)';
+  if (/dashboard.*topbar|brand logo/.test(pf)) return 'Frontend (topbar component, logo anchor binding)';
+  if (/marketing.*template|marketing.*ads/.test(pf)) return 'Backend asset paths + uploads dir';
+  if (/report/.test(pf)) return 'Reports controller + custom-reports asset manifest';
+  if (/t&c|set up|terms|conditions/.test(pf)) return 'Bundle assets (CKEditor) + Set Up T&C controller';
+  if (/logs.*blockers/.test(pf)) return 'Symfony backend (clinic blockers controller — null-safety on clinic load)';
+  if (/settings.*subscription/.test(pf)) return 'Subscription module (routing + payment-method delete confirmation)';
+  return null;
+}
 
 // ---- Cache: fingerprint -> { issueUrl, firstSentAt, eventId? } ---------
 
@@ -103,10 +175,23 @@ function fallbackUrlFor(fp, orgSlug, projectId) {
 function buildEvent(test, opts) {
   const isUnexpectedPass = test.status === 'passed' && test.expectedStatus === 'failed';
   const firstErr = (test.errors || [])[0] || '';
-  const summary = isUnexpectedPass
-    ? `[tripwire fired — bug may be fixed] ${test.title}`
-    : test.title;
+  const bugId = bugIdFromTest(test);
+  const catalog = loadBugCatalog();
+  const bug = bugId && catalog[bugId];
 
+  // Title format: "[K21 · CRITICAL] Add Patient — firstName ≥46 chars returns
+  // HTTP 500 (Patients › Add Patient)" — so the Sentry feed list shows the
+  // K-ID, severity, what's broken, and where, all in one line.
+  const severity = (test.aiAnalysis && test.aiAnalysis.severity) || (bug && bug.severity) || 'major';
+  const titleBase = bug
+    ? bug.description.replace(/`[^`]+`/g, (m) => m.slice(1, -1)).slice(0, 140)
+    : test.title;
+  const tag = isUnexpectedPass ? 'TRIPWIRE FIRED' : bug ? `${bugId} · ${severity.toUpperCase()}` : 'UNKNOWN';
+  const place = bug ? ` (${bug.pageFeature})` : '';
+  const summary = `[${tag}] ${titleBase}${place}`;
+
+  // Source snippet around the failing line — Sentry's AI can use this to
+  // reason about test-side issues (selector drift, timeout boundaries, etc).
   let sourceSnippet = '';
   try {
     const specPath = resolveSpecPath(test.file);
@@ -119,27 +204,48 @@ function buildEvent(test, opts) {
     }
   } catch {}
 
+  // Single, unified description that gives Sentry's AI everything a human
+  // triager would read.
+  const devCodeHint = devCodeHintFor(bugId, bug && bug.pageFeature);
+  const triageBlock = [
+    bug ? `# Known bug ${bugId} — ${bug.severity.toUpperCase()}` : `# Failure (no K-bug catalogue entry)`,
+    bug && `**Where:** ${bug.pageFeature}`,
+    bug && `**Description:**\n${bug.description}`,
+    bug && bug.surfacedBy && `**Surfaced by:** ${bug.surfacedBy}`,
+    bug && bug.triageNotes && `**Triage notes:**\n${bug.triageNotes}`,
+    devCodeHint && `**Likely dev-code area:** ${devCodeHint}`,
+    test.aiAnalysis && test.aiAnalysis.rootCause && `**Heuristic root-cause:** ${test.aiAnalysis.rootCause}`,
+    test.aiAnalysis && test.aiAnalysis.suggestedFix && `**Heuristic suggested fix:**\n${test.aiAnalysis.suggestedFix}`,
+    isUnexpectedPass && `**⚠ Tripwire fired:** this test was expected to fail (it's a known-bug tripwire) but unexpectedly passed. The bug may be fixed — verify on the target environment before removing from the catalogue.`,
+  ].filter(Boolean).join('\n\n');
+
   return {
     message: summary,
-    level: severityToLevel(test.aiAnalysis && test.aiAnalysis.severity),
+    level: severityToLevel(severity),
     tags: {
       [FINGERPRINT_TAG]: test.__fp,
-      module: test.module || 'unknown',
-      test_file: test.file || '',
+      bug_id: bugId || 'none',
+      bug_module: test.module || 'unknown',
+      severity,
       outcome: test.outcome || 'unknown',
       is_unexpected_pass: String(isUnexpectedPass),
-      bug_id: test.bugId || 'none',
+      is_known_bug: bug ? 'true' : 'false',
+      page_feature: (bug && bug.pageFeature) || 'unknown',
+      dev_code_area: devCodeHint || 'unknown',
+      manual_tc: (bug && bug.surfacedBy) || 'none',
+      test_file: test.file || '',
       env: opts.env || process.env.BASE_URL || 'unknown',
       git_sha: process.env.GIT_SHA || 'unknown',
       git_branch: process.env.GIT_BRANCH || 'unknown',
     },
     extra: {
+      triageReport: triageBlock,
+      testTitle: test.title,
       firstError: firstErr.slice(0, 4000),
-      sourceSnippet: sourceSnippet || '(spec source unavailable)',
-      reproSteps: test.aiAnalysis && test.aiAnalysis.reproSteps,
-      rootCause: test.aiAnalysis && test.aiAnalysis.rootCause,
-      suggestedFix: test.aiAnalysis && test.aiAnalysis.suggestedFix,
-      attachments: (test.attachments || []).map((a) => a.path),
+      specSourceSnippet: sourceSnippet || '(spec source unavailable)',
+      reproStepsList: (test.aiAnalysis && test.aiAnalysis.reproSteps) || [],
+      attachmentsOnDashboard: (test.attachments || []).map((a) => a.path),
+      ciRun: process.env.GITHUB_RUN_ID ? `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}` : null,
     },
     fingerprint: [test.__fp, test.title || 'no-title'],
   };
@@ -267,16 +373,52 @@ async function enrichFailuresWithSentry(tests, opts = {}) {
     attempted++;
     try {
       const evt = buildEvent(t, opts);
-      const eventId = Sentry.captureEvent(evt);
+
+      // Wrap each event in its own scope so attachments + breadcrumbs we set
+      // don't leak across iterations.
+      const eventId = Sentry.withScope((scope) => {
+        // Each repro step becomes a breadcrumb — Sentry's UI then shows a
+        // numbered timeline of "what the test did" leading up to the error.
+        const steps = (t.aiAnalysis && t.aiAnalysis.reproSteps) || [];
+        steps.forEach((step, i) => {
+          scope.addBreadcrumb({
+            category: 'repro',
+            type: 'navigation',
+            message: `Step ${i + 1}: ${step}`,
+            level: 'info',
+            timestamp: Date.now() / 1000 - (steps.length - i),
+          });
+        });
+
+        // Attach the failure screenshot if Playwright saved one. Sentry
+        // shows attachments inline on the issue page — way better than a
+        // path string the triager has to chase.
+        for (const a of t.attachments || []) {
+          const absPath = path.isAbsolute(a.path)
+            ? a.path
+            : path.join(ROOT, 'dashboard', a.path);
+          if (fs.existsSync(absPath)) {
+            try {
+              scope.addAttachment({
+                filename: path.basename(absPath),
+                data: fs.readFileSync(absPath),
+                contentType: 'image/png',
+              });
+            } catch (attachErr) {
+              log(`[sentry] attachment skipped (${absPath}): ${attachErr.message}`);
+            }
+          }
+        }
+
+        return Sentry.captureEvent(evt);
+      });
+
       if (!eventId) {
         log(`[sentry] captureEvent returned no id for "${t.title.slice(0, 60)}" — keeping fallback URL`);
         skipped++;
         continue;
       }
       // Upgrade the fallback URL to the actual event/issue search URL.
-      // We use search-by-event-id rather than direct /issues/<id>/ because
-      // event-id and issue-id are different in Sentry; the search URL is
-      // robust against that distinction.
       const realUrl = `https://${orgSlug}.sentry.io/issues/?query=${encodeURIComponent(`event.id:${eventId}`)}&project=${projectId}`;
       t.sentryIssueUrl = realUrl;
       t.sentrySent = true;
