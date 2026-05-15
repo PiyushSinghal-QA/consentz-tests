@@ -116,17 +116,24 @@ function bugScore(bugList, weights) {
   return Math.max(0, 100 - deduction);
 }
 
-/** Blended per-module health: 60% bug load + 40% pass rate.
- *  Returns null (N/A) when total tests = 0 AND total bugs = 0 — no signal. */
+/** Blended per-module health: 60% bug load + 40% "working rate."
+ *  Returns null (N/A) when total tests = 0 AND total bugs = 0 — no signal.
+ *  Mirrors computeModuleHealth() server-side; recomputed client-side so
+ *  localStorage severity overrides take effect immediately. */
 function moduleHealth(m, weights) {
-  const hasTests = (m.total || 0) > 0;
+  const total = (m.total || 0);
+  const hasTests = total > 0;
   const hasBugs = (m.bugs || []).length > 0;
   if (!hasTests && !hasBugs) return null;
 
   const bs = bugScore(m.bugs, weights);
   if (!hasTests) return Math.round(bs);
-  const passRate = (m.pass / m.total) * 100;
-  return Math.round(HEALTH_BUG_WEIGHT * bs + HEALTH_PASS_WEIGHT * passRate);
+  // Count "tests doing what they should" — only unknown failures (real
+  // regressions) drag this down. test.fail() tripwires firing as designed
+  // and tripwires that unexpectedly passed both count as "working."
+  const unknownFails = (m.tests || []).filter((t) => t.status === 'failed' && t.outcome === 'unexpected').length;
+  const workingRate = ((total - unknownFails) / total) * 100;
+  return Math.round(HEALTH_BUG_WEIGHT * bs + HEALTH_PASS_WEIGHT * workingRate);
 }
 
 function healthClass(score, thresholds) {
@@ -336,6 +343,12 @@ function renderModules(modules, weights, thresholds) {
     const unverified = m.bugs.filter((b) => b.unverified).length;
     const automated = m.bugs.filter((b) => b.test).length;
     const mayBeFixed = m.bugs.filter((b) => b.tripwireFired).length;
+    // "Working" = tests doing what they were supposed to (passed normally
+    // OR failed as a test.fail() tripwire by design). Only unknown
+    // failures (real regressions) count against the module. This labels
+    // the visible counter consistently with how moduleHealth scores it.
+    const unknownFails = m.unknownFails != null ? m.unknownFails : ((m.tests || []).filter((t) => t.status === 'failed' && t.outcome === 'unexpected').length);
+    const working = m.total - unknownFails;
 
     const card = document.createElement('div');
     card.className = `module-card ${cls}`;
@@ -345,9 +358,9 @@ function renderModules(modules, weights, thresholds) {
         <span class="health" title="${isNA ? 'No tests + no bugs — module is unrated' : ''}">${isNA ? 'N/A' : score}</span>
       </h3>
       <div class="bar"><div style="width:${isNA ? 0 : score}%"></div></div>
-      <div class="module-stats">
-        <span>${m.pass}/${m.total} passing</span>
-        ${m.fail ? `<span style="color:var(--red)">${m.fail} failed</span>` : ''}
+      <div class="module-stats" title="Tests doing what they were supposed to (normal pass + test.fail() tripwires firing as designed). Only unknown failures drag health down.">
+        <span>${m.total ? `${working}/${m.total} working` : '0/0 tests'}</span>
+        ${unknownFails ? `<span style="color:var(--red)">${unknownFails} regression${unknownFails === 1 ? '' : 's'}</span>` : ''}
         ${m.skipped ? `<span>${m.skipped} skipped</span>` : ''}
       </div>
       <div class="module-stats" style="margin-top:6px">

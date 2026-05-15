@@ -82,8 +82,20 @@ function stripAnsi(s) {
 }
 
 /** Blended per-module health: 60% bug-load score + 40% test pass rate.
- *  Returns null (N/A) when the module has 0 tests AND 0 bugs — no signal. */
-function computeModuleHealth(bugs, pass, total, weights) {
+ *  Returns null (N/A) when the module has 0 tests AND 0 bugs — no signal.
+ *
+ *  The pass-rate denominator counts "tests doing what they were supposed
+ *  to do" (outcome === 'expected' OR a tripwire that unexpectedly passed,
+ *  i.e. a "may be fixed" signal). The only thing that drags health down
+ *  from the test-side is an UNKNOWN failure — a test.fail()-less test that
+ *  failed when it should have passed. Without this distinction, modules
+ *  whose only bugs surface via test.fail() (Settings here) score 0% pass
+ *  while modules whose tripwires happen to surface via unexpected-pass
+ *  (Marketing) score 100% — same coverage quality, wildly different
+ *  numbers. That's the consistency fix.
+ */
+function computeModuleHealth(bugs, tests, weights) {
+  const total = tests.length;
   const hasTests = total > 0;
   const hasBugs = bugs.length > 0;
   if (!hasTests && !hasBugs) return null;
@@ -91,11 +103,12 @@ function computeModuleHealth(bugs, pass, total, weights) {
   const deduction = bugs.reduce((s, b) => s + (weights[b.severity] || 0), 0);
   const bugScore = Math.max(0, 100 - deduction);
 
-  // When a module has bugs but no tests run, fall back to pure bug score.
   if (!hasTests) return Math.round(bugScore);
 
-  const passRate = (pass / total) * 100;
-  return Math.round(HEALTH_BUG_WEIGHT * bugScore + HEALTH_PASS_WEIGHT * passRate);
+  // Only "unknown" outcomes (real regressions) count as fails for health.
+  const unknownFails = tests.filter((t) => t.status === 'failed' && t.outcome === 'unexpected').length;
+  const workingRate = ((total - unknownFails) / total) * 100;
+  return Math.round(HEALTH_BUG_WEIGHT * bugScore + HEALTH_PASS_WEIGHT * workingRate);
 }
 
 function safeFilename(s) {
@@ -282,11 +295,19 @@ async function main() {
     const bugs = Object.entries(severity.bugs)
       .filter(([, b]) => b.module === m.name)
       .map(([id, b]) => ({ id, ...b }));
-    const health = computeModuleHealth(bugs, pass, total, severity.weights);
+    const health = computeModuleHealth(bugs, m.tests, severity.weights);
+    // Per-module count of UNEXPECTED failures (real regressions only).
+    // `fail` is the raw status-failed count which includes test.fail()
+    // tripwires firing as designed — those aren't real regressions but
+    // they used to drag the visible "X failed" counter on the card.
+    const unknownFails = m.tests.filter((t) => t.status === 'failed' && t.outcome === 'unexpected').length;
+    const expectedFails = m.tests.filter((t) => t.status === 'failed' && t.outcome === 'expected').length;
     return {
       name: m.name,
       pass,
       fail,
+      unknownFails,
+      expectedFails,
       skipped,
       total,
       tests: m.tests,
