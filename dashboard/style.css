@@ -233,10 +233,13 @@ section h2 { font-size: 18px; font-weight: 600; margin: 0 0 12px; letter-spacing
 
 .hero-stats {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
   flex: 1;
-  min-width: 260px;
+  min-width: 300px;
+}
+@media (max-width: 1100px) {
+  .hero-stats { grid-template-columns: repeat(3, 1fr); }
 }
 .stat {
   background: var(--surface-2);
@@ -264,11 +267,12 @@ section h2 { font-size: 18px; font-weight: 600; margin: 0 0 12px; letter-spacing
   margin-top: 4px;
   display: block;
 }
-.num.pass     { color: var(--green); }
-.num.fail     { color: var(--red); }
-.num.unknown  { color: var(--red); }
-.num.expected { color: var(--yellow); }
-.num.skip     { color: var(--gray); }
+.num.pass         { color: var(--green); }
+.num.fail         { color: var(--red); }
+.num.unknown      { color: var(--red); }
+.num.expected     { color: var(--yellow); }
+.num.may-be-fixed { color: var(--green); }
+.num.skip         { color: var(--gray); }
 
 @media (max-width: 768px) {
   .hero-stats { grid-template-columns: repeat(2, 1fr); }
@@ -620,6 +624,17 @@ section h2 { font-size: 18px; font-weight: 600; margin: 0 0 12px; letter-spacing
 .failures-group-unknown > summary:hover { background: rgba(248, 113, 113, 0.11); }
 .failures-group-unknown .group-count { background: var(--red); color: white; box-shadow: 0 0 10px var(--red-glow); }
 .failures-group-unknown.is-empty .group-count { background: var(--green); box-shadow: 0 0 10px var(--green-glow); }
+
+/* Fixed group — "may be fixed" tripwires, green/positive. */
+.failures-group-fixed {
+  border-color: rgba(52, 211, 153, 0.4);
+  background: linear-gradient(180deg, rgba(52, 211, 153, 0.05) 0%, var(--surface-2) 100%);
+}
+.failures-group-fixed > summary { background: rgba(52, 211, 153, 0.07); }
+.failures-group-fixed > summary:hover { background: rgba(52, 211, 153, 0.11); }
+.failures-group-fixed .group-count { background: var(--green); color: white; box-shadow: 0 0 10px var(--green-glow); animation: tripwire-pulse 2.5s ease-in-out infinite; }
+.failures-group-fixed.is-empty .group-count { background: var(--border-strong); color: var(--text-muted); box-shadow: none; animation: none; }
+
 .failures-group-known .group-count { background: rgba(251, 191, 36, 0.18); color: var(--yellow); border: 1px solid rgba(251, 191, 36, 0.35); }
 .failures-empty {
   padding: 24px;
@@ -654,6 +669,7 @@ section h2 { font-size: 18px; font-weight: 600; margin: 0 0 12px; letter-spacing
 }
 .failure-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .failure-card.failure-unknown { border-left-color: var(--red); }
+.failure-card.failure-fixed   { border-left-color: var(--green); }
 .failure-card.failure-known   { border-left-color: var(--yellow); opacity: 0.85; }
 .failure-card.failure-known:hover { opacity: 1; }
 .failure-card h4 {

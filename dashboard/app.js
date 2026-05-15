@@ -163,9 +163,17 @@ function render() {
   // from per-test `outcome` for backward compatibility with older payloads.
   const unknownFailures = d.overall.unknownFailures != null ? d.overall.unknownFailures : countTests(d, (t) => t.status === 'failed' && t.outcome === 'unexpected');
   const expectedFailures = d.overall.expectedFailures != null ? d.overall.expectedFailures : countTests(d, (t) => t.status === 'failed' && t.outcome === 'expected');
-  document.getElementById('overall-pass').textContent = d.overall.pass;
+  const mayBeFixed = d.overall.tripwiresFired != null ? d.overall.tripwiresFired : countTests(d, (t) => t.status === 'passed' && t.expectedStatus === 'failed');
+  // Subtract may-be-fixed from the visible "passed" so the 6 hero counters
+  // add cleanly to total: passed + mayBeFixed + unknown + expected + skipped.
+  // Raw Playwright pass count includes the may-be-fixed (unexpected-pass)
+  // tests, which overstates genuine passes if shown side-by-side with the
+  // may-be-fixed counter.
+  const genuinePass = Math.max(0, (d.overall.pass || 0) - mayBeFixed);
+  document.getElementById('overall-pass').textContent = genuinePass;
   document.getElementById('overall-unknown').textContent = unknownFailures;
   document.getElementById('overall-expected').textContent = expectedFailures;
+  document.getElementById('overall-may-be-fixed').textContent = mayBeFixed;
   document.getElementById('overall-skipped').textContent = d.overall.skipped;
   document.getElementById('overall-total').textContent = d.overall.total;
 
@@ -617,40 +625,52 @@ function bugIdForTest(t, allBugs) {
 
 function renderFailures(modules) {
   const unknownList = document.getElementById('failures-unknown-list');
+  const fixedList = document.getElementById('failures-fixed-list');
   const knownList = document.getElementById('failures-known-list');
   const summary = document.getElementById('failures-summary');
   unknownList.innerHTML = '';
+  fixedList.innerHTML = '';
   knownList.innerHTML = '';
 
   const allBugs = (state.data && state.data.bugs) || [];
 
   const unknown = [];
+  const fixed = [];      // test.fail() that unexpectedly passed — may be fixed
   const known = [];
   for (const m of modules) {
     for (const t of m.tests || []) {
-      if (t.status !== 'failed') continue;
       const item = { ...t, module: m.name, bugId: bugIdForTest(t, allBugs) };
-      // Classification: outcome takes precedence (server-emitted). Fall back to
-      // the bug-id heuristic: a [Kxx] tag implies known, no tag implies unknown.
-      const isKnown = item.outcome === 'expected' || (item.outcome == null && !!item.bugId);
-      if (isKnown) known.push(item); else unknown.push(item);
+      // Three buckets:
+      //   1. status=passed AND expectedStatus=failed → tripwire fired, may be fixed
+      //   2. status=failed AND outcome=expected     → known bug tripwire firing as designed
+      //   3. status=failed AND outcome=unexpected   → unknown regression
+      if (item.status === 'passed' && item.expectedStatus === 'failed') {
+        fixed.push(item);
+      } else if (item.status === 'failed') {
+        const isKnown = item.outcome === 'expected' || (item.outcome == null && !!item.bugId);
+        if (isKnown) known.push(item); else unknown.push(item);
+      }
     }
   }
 
   // Section summary line
-  if (unknown.length === 0 && known.length === 0) {
-    summary.textContent = 'No failed tests on this run.';
+  const total = unknown.length + fixed.length + known.length;
+  if (total === 0) {
+    summary.textContent = 'No failures or fired tripwires on this run.';
   } else {
-    summary.textContent = `${unknown.length} unknown · ${known.length} known-bug tripwire${known.length === 1 ? '' : 's'} firing`;
+    const bits = [];
+    if (unknown.length) bits.push(`${unknown.length} unknown`);
+    if (fixed.length)   bits.push(`${fixed.length} may be fixed`);
+    if (known.length)   bits.push(`${known.length} known-bug tripwire${known.length === 1 ? '' : 's'} firing`);
+    summary.textContent = bits.join(' · ');
   }
 
-  // Render counts in the group summaries
+  // Render counts in each group's summary chip
   document.getElementById('failures-unknown-count').textContent = unknown.length;
+  document.getElementById('failures-fixed-count').textContent = fixed.length;
   document.getElementById('failures-known-count').textContent = known.length;
 
-  // Unknown group is open by default + visible only when it has content; we
-  // collapse it to a "no unknowns" note if empty so the panel doesn't look
-  // alarmingly red when there's nothing wrong.
+  // Unknown group: open by default + visible only when populated.
   const unknownGroup = document.getElementById('failures-unknown-group');
   unknownGroup.classList.toggle('is-empty', unknown.length === 0);
   if (unknown.length === 0) {
@@ -658,6 +678,16 @@ function renderFailures(modules) {
   } else {
     for (const t of unknown) unknownList.appendChild(buildFailureCard(t, 'unknown'));
   }
+
+  // Fixed group: same empty-state handling.
+  const fixedGroup = document.getElementById('failures-fixed-group');
+  fixedGroup.classList.toggle('is-empty', fixed.length === 0);
+  if (fixed.length === 0) {
+    fixedList.innerHTML = '<p class="failures-empty">No tripwires fired this run — every K-bug still reproduces.</p>';
+  } else {
+    for (const t of fixed) fixedList.appendChild(buildFailureCard(t, 'fixed'));
+  }
+
   for (const t of known) knownList.appendChild(buildFailureCard(t, 'known'));
 }
 

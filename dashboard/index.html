@@ -53,6 +53,10 @@
             <span id="overall-expected" class="num expected">—</span>
             <small>known bugs</small>
           </div>
+          <div class="stat" title="`test.fail()` tripwires that unexpectedly passed — the bug may be fixed. Investigate and, if confirmed, remove from the K-bug catalogue.">
+            <span id="overall-may-be-fixed" class="num may-be-fixed">—</span>
+            <small>may be fixed</small>
+          </div>
           <div class="stat">
             <span id="overall-skipped" class="num skip">—</span>
             <small>skipped</small>
@@ -157,6 +161,18 @@
           <span class="group-hint">Tests that should have passed — needs investigation</span>
         </summary>
         <div id="failures-unknown-list" class="failures-list"></div>
+      </details>
+
+      <!-- Tripwires that unexpectedly passed — bug may be fixed. Open by default
+           because each one is an actionable "investigate the fix" item. -->
+      <details id="failures-fixed-group" class="failures-group failures-group-fixed" open>
+        <summary>
+          <span class="group-marker">🎉</span>
+          <span class="group-label">Tripwires fired — may be fixed</span>
+          <span class="group-count" id="failures-fixed-count">0</span>
+          <span class="group-hint">`test.fail()` cases that passed unexpectedly — investigate, the bug may be gone</span>
+        </summary>
+        <div id="failures-fixed-list" class="failures-list"></div>
       </details>
 
       <!-- Known-bug tripwires firing as designed. Quiet, collapsed by default. -->
